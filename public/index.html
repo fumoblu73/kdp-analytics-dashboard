@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDP Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .login-section {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .login-button {
+            width: 100%;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .revenue .stat-value { color: #27ae60; }
+        .spend .stat-value { color: #e74c3c; }
+        .profit .stat-value { color: #f39c12; }
+        .acos .stat-value { color: #9b59b6; }
+        .orders .stat-value { color: #3498db; }
+        .kenp .stat-value { color: #1abc9c; }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .success {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+
+        .error {
+            background: #fadbd8;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .info {
+            background: #e3f2fd;
+            color: #2196f3;
+            border: 1px solid #2196f3;
+        }
+
+        .sync-info {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sync-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin: 5px;
+        }
+
+        .connected { background: #d5f4e6; color: #27ae60; }
+        .disconnected { background: #fadbd8; color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📚 KDP Analytics Dashboard</h1>
+            <p>Cloud-Based Amazon KDP & Ads Analytics</p>
+        </div>
+
+        <!-- Login Section -->
+        <div id="loginSection" class="login-section">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #2c3e50;">
+                🔐 Dashboard Login
+            </h2>
+            
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            
+            <button class="login-button" onclick="loginToDashboard()">
+                🚀 Access Dashboard
+            </button>
+            
+            <div id="loginMessage"></div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center;">
+                <p style="color: #666; font-size: 14px;">
+                    📱 Install the browser extension to sync your KDP and Amazon Ads data<br>
+                    🔗 Extension will connect to: <strong id="dashboardUrl"></strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- Sync Status -->
+        <div id="syncInfo" class="sync-info hidden">
+            <h3>📊 Sync Status</h3>
+            <div style="margin: 15px 0;">
+                <span id="kdpStatus" class="sync-status disconnected">KDP: Not Synced</span>
+                <span id="adsStatus" class="sync-status disconnected">Ads: Not Synced</span>
+            </div>
+            <p style="color: #666; font-size: 14px;">
+                Last sync: <span id="lastSync">Never</span>
+            </p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid hidden" id="statsGrid">
+            <div class="stat-card revenue">
+                <div class="stat-value" id="totalRevenue">$0</div>
+                <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-card spend">
+                <div class="stat-value" id="totalSpend">$0</div>
+                <div class="stat-label">Ad Spend</div>
+            </div>
+            <div class="stat-card profit">
+                <div class="stat-value" id="netProfit">$0</div>
+                <div class="stat-label">Net Profit</div>
+            </div>
+            <div class="stat-card acos">
+                <div class="stat-value" id="avgAcos">0%</div>
+                <div class="stat-label">Avg ACoS</div>
+            </div>
+            <div class="stat-card orders">
+                <div class="stat-value" id="totalOrders">0</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card kenp">
+                <div class="stat-value" id="totalKenp">0</div>
+                <div class="stat-label">KENP Read</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section hidden" id="chartsSection">
+            <div class="chart-container">
+                <div class="chart-title">📈 Revenue vs Ad Spend Over Time</div>
+                <canvas id="revenueChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">📊 Revenue by Book</div>
+                <canvas id="booksChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">💰 Daily Profit/Loss</div>
+                <canvas id="profitChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">📖 KENP Reads Trend</div>
+                <canvas id="kenpChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let dashboardData = null;
+        let charts = {};
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Display current dashboard URL for extension setup
+            document.getElementById('dashboardUrl').textContent = window.location.origin;
+            
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('dashboardUser');
+            if (savedUser) {
+                const userData = JSON.parse(savedUser);
+                document.getElementById('email').value = userData.email;
+                // Auto-login if session is recent (less than 24 hours)
+                if (Date.now() - userData.loginTime < 24 * 60 * 60 * 1000) {
+                    loginToDashboard();
+                }
+            }
+        });
+
+        async function loginToDashboard() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showMessage('Please enter both email and password', 'error', 'loginMessage');
+                return;
+            }
+            
+            try {
+                showMessage('Logging in...', 'info', 'loginMessage');
+                
+                // Attempt to get user data
+                const response = await fetch('/api/dashboard-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        currentUser = { email, password };
+                        dashboardData = result.data;
+                        
+                        // Save login info
+                        localStorage.setItem('dashboardUser', JSON.stringify({
+                            email: email,
+                            loginTime: Date.now()
+                        }));
+                        
+                        showMessage('Login successful!', 'success', 'loginMessage');
+                        
+                        // Hide login, show dashboard
+                        setTimeout(() => {
+                            document.getElementById('loginSection').classList.add('hidden');
+                            document.getElementById('syncInfo').classList.remove('hidden');
+                            showDashboard();
+                        }, 1000);
+                        
+                    } else {
+                        showMessage('Login failed: ' + result.error, 'error', 'loginMessage');
+                    }
+                } else {
+                    // User doesn't exist yet, create new account
+                    if (response.status === 404) {
+                        showMessage('New user detected - account will be created on first sync', 'info', 'loginMessage');
+                        
+                        currentUser = { email, password };
+                        
+                        localStorage.setItem('dashboardUser', JSON.stringify({
+                            email: email,
+                            loginTime: Date.now()
+                        }));
+                        
+                        setTimeout(() => {
+                            document.getElementById('loginSection').classList.add('hidden');
+                            document.getElementById('syncInfo').classList.remove('hidden');
+                            showWaitingForSync();
+                        }, 2000);
+                    } else {
+                        showMessage('Login failed: Server error', 'error', 'loginMessage');
+                    }
+                }
+                
+            } catch (error) {
+                showMessage('Connection error: ' + error.message, 'error', 'loginMessage');
+            }
+        }
+
+        function showDashboard() {
+            if (!dashboardData || !dashboardData.combinedData || dashboardData.combinedData.length === 0) {
+                showWaitingForSync();
+                return;
+            }
+            
+            updateSyncStatus();
+            updateStats();
+            updateCharts();
+            
+            document.getElementById('statsGrid').classList.remove('hidden');
+            document.getElementById('chartsSection').classList.remove('hidden');
+        }
+
+        function showWaitingForSync() {
+            document.getElementById('syncInfo').classList.remove('hidden');
+            document.getElementById('kdpStatus').textContent = 'KDP: Waiting for sync';
+            document.getElementById('adsStatus').textContent = 'Ads: Waiting for sync';
+            document.getElementById('lastSync').textContent = 'Install extension and sync data';
+            
+            // Check for updates every 10 seconds
+            setInterval(checkForUpdates, 10000);
+        }
+
+        async function checkForUpdates() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch('/api/dashboard-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentUser)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data.combinedData.length > 0) {
+                        dashboardData = result.data;
+                        showDashboard();
+                    }
+                }
+            } catch (error) {
+                console.error('Update check failed:', error);
+            }
+        }
+
+        function updateSyncStatus() {
+            if (!dashboardData) return;
+            
+            const hasKdpData = dashboardData.kdpData && dashboardData.kdpData.length > 0;
+            const hasAdsData = dashboardData.adsData && dashboardData.adsData.length > 0;
+            
+            document.getElementById('kdpStatus').className = 'sync-status ' + (hasKdpData ? 'connected' : 'disconnected');
+            document.getElementById('kdpStatus').textContent = hasKdpData ? 'KDP: Connected' : 'KDP: No Data';
+            
+            document.getElementById('adsStatus').className = 'sync-status ' + (hasAdsData ? 'connected' : 'disconnected');
+            document.getElementById('adsStatus').textContent = hasAdsData ? 'Ads: Connected' : 'Ads: No Data';
+            
+            // Find latest sync time
+            let latestSync = null;
+            if (dashboardData.kdpData) {
+                dashboardData.kdpData.forEach(item => {
+                    if (!latestSync || new Date(item.syncTimestamp) > new Date(latestSync)) {
+                        latestSync = item.syncTimestamp;
+                    }
+                });
+            }
+            if (dashboardData.adsData) {
+                dashboardData.adsData.forEach(item => {
+                    if (!latestSync || new Date(item.syncTimestamp) > new Date(latestSync)) {
+                        latestSync = item.syncTimestamp;
+                    }
+                });
+            }
+            
+            document.getElementById('lastSync').textContent = latestSync 
+                ? new Date(latestSync).toLocaleString()
+                : 'Never';
+        }
+
+        function updateStats() {
+            if (!dashboardData || !dashboardData.summary) return;
+            
+            const summary = dashboardData.summary;
+            
+            document.getElementById('totalRevenue').textContent = '$' + summary.totalRevenue.toFixed(2);
+            document.getElementById('totalSpend').textContent = '$' + summary.totalSpend.toFixed(2);
+            document.getElementById('netProfit').textContent = '$' + (summary.totalRevenue - summary.totalSpend).toFixed(2);
+            document.getElementById('totalOrders').textContent = summary.totalOrders;
+            document.getElementById('totalKenp').textContent = summary.totalKenp.toLocaleString();
+            
+            // Calculate average ACoS
+            const avgAcos = summary.totalRevenue > 0 ? (summary.totalSpend / summary.totalRevenue * 100) : 0;
+            document.getElementById('avgAcos').textContent = avgAcos.toFixed(1) + '%';
+        }
+
+        function updateCharts() {
+            if (!dashboardData || !dashboardData.combinedData) return;
+            
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+
+            createRevenueChart();
+            createBooksChart();
+            createProfitChart();
+            createKenpChart();
+        }
+
+        function createRevenueChart() {
+            const ctx = document.getElementById('revenueChart');
+            const data = dashboardData.combinedData;
+            
+            // Group by date
+            const groupedByDate = {};
+            data.forEach(item => {
+                if (!groupedByDate[item.date]) {
+                    groupedByDate[item.date] = { revenue: 0, spend: 0 };
+                }
+                groupedByDate[item.date].revenue += item.royalty;
+                groupedByDate[item.date].spend += item.adSpend;
+            });
+
+            const dates = Object.keys(groupedByDate).sort();
+            const revenues = dates.map(date => groupedByDate[date].revenue);
+            const spends = dates.map(date => groupedByDate[date].spend);
+
+            charts.revenue = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: revenues,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Ad Spend',
+                        data: spends,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createBooksChart() {
+            const ctx = document.getElementById('booksChart');
+            const data = dashboardData.combinedData;
+            
+            // Group by book title
+            const groupedByBook = {};
+            data.forEach(item => {
+                const shortTitle = item.title ? item.title.substring(0, 30) + '...' : 'Unknown';
+                if (!groupedByBook[shortTitle]) {
+                    groupedByBook[shortTitle] = 0;
+                }
+                groupedByBook[shortTitle] += item.royalty;
+            });
+
+            const books = Object.keys(groupedByBook);
+            const revenues = Object.values(groupedByBook);
+            const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
+
+            charts.books = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: books,
+                    datasets: [{
+                        data: revenues,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createProfitChart() {
+            const ctx = document.getElementById('profitChart');
+            const data = dashboardData.combinedData;
+            
+            // Group by date
+            const groupedByDate = {};
+            data.forEach(item => {
+                if (!groupedByDate[item.date]) {
+                    groupedByDate[item.date] = 0;
+                }
+                groupedByDate[item.date] += item.netProfit;
+            });
+
+            const dates = Object.keys(groupedByDate).sort();
+            const profits = dates.map(date => groupedByDate[date]);
+
+            charts.profit = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Daily Profit',
+                        data: profits,
+                        backgroundColor: profits.map(p => p >= 0 ? '#27ae60' : '#e74c3c'),
+                        borderColor: profits.map(p => p >= 0 ? '#229954' : '#c0392b'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createKenpChart() {
+            const ctx = document.getElementById('kenpChart');
+            const data = dashboardData.combinedData;
+            
+            // Group by date
+            const groupedByDate = {};
+            data.forEach(item => {
+                if (!groupedByDate[item.date]) {
+                    groupedByDate[item.date] = 0;
+                }
+                groupedByDate[item.date] += item.kenpRead;
+            });
+
+            const dates = Object.keys(groupedByDate).sort();
+            const kenpReads = dates.map(date => groupedByDate[date]);
+
+            charts.kenp = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'KENP Reads',
+                        data: kenpReads,
+                        borderColor: '#1abc9c',
+                        backgroundColor: 'rgba(26, 188, 156, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showMessage(message, type, elementId) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '<div class="status-message ' + type + '">' + message + '</div>';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    element.innerHTML = '';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>
