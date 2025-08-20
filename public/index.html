@@ -3,12 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KDP Analytics Pro - Real-time Dashboard</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.8.0/esm/index.js" type="module"></script>
-    <script src="https://unpkg.com/lucide-react@0.263.1/dist/esm/lucide-react.js" type="module"></script>
+    <title>KDP Analytics Pro - Auto-Sync Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -16,8 +11,6 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
                 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
                 sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
         
         .loading-spinner {
@@ -35,814 +28,302 @@
             100% { transform: rotate(360deg); }
         }
         
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .setup-form {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: .5;
-            }
+        .setup-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .alert {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #059669;
+        }
+        
+        .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #2563eb;
         }
     </style>
 </head>
 <body>
-    <div id="root">
-        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f3f4f6;">
-            <div style="text-align: center;">
+    <div id="app">
+        <div class="setup-form">
+            <div class="setup-card">
                 <div class="loading-spinner" style="margin: 0 auto 20px;"></div>
-                <h2 style="color: #374151; margin: 0;">Loading KDP Analytics Dashboard...</h2>
-                <p style="color: #6b7280; margin: 10px 0 0;">Connecting to your KDP data</p>
+                <h2 style="text-align: center; color: #374151; margin: 0;">Loading KDP Analytics...</h2>
+                <p style="text-align: center; color: #6b7280; margin: 10px 0 0;">Checking setup status</p>
             </div>
         </div>
     </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script>
+        const API_BASE = window.location.origin;
         
-        // Import icons from Lucide (will be available globally)
-        const TrendingUp = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('polyline', { points: "22,7 13.5,15.5 8.5,10.5 2,17" }),
-                React.createElement('polyline', { points: "16,7 22,7 22,13" })
-            );
-
-        const Book = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('path', { d: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20" }),
-                React.createElement('path', { d: "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" })
-            );
-
-        const DollarSign = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('line', { x1: "12", y1: "1", x2: "12", y2: "23" }),
-                React.createElement('path', { d: "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" })
-            );
-
-        const Eye = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('path', { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }),
-                React.createElement('circle', { cx: "12", cy: "12", r: "3" })
-            );
-
-        const Target = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('circle', { cx: "12", cy: "12", r: "10" }),
-                React.createElement('circle', { cx: "12", cy: "12", r: "6" }),
-                React.createElement('circle', { cx: "12", cy: "12", r: "2" })
-            );
-
-        const Award = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('circle', { cx: "12", cy: "8", r: "7" }),
-                React.createElement('polyline', { points: "8.21,13.89 7,23 12,20 17,23 15.79,13.88" })
-            );
-
-        const Globe = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('circle', { cx: "12", cy: "12", r: "10" }),
-                React.createElement('line', { x1: "2", y1: "12", x2: "22", y2: "12" }),
-                React.createElement('path', { d: "M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" })
-            );
-
-        const RefreshCw = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('polyline', { points: "23,4 23,10 17,10" }),
-                React.createElement('polyline', { points: "1,20 1,14 7,14" }),
-                React.createElement('path', { d: "M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" })
-            );
-
-        const AlertCircle = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('circle', { cx: "12", cy: "12", r: "10" }),
-                React.createElement('line', { x1: "12", y1: "8", x2: "12", y2: "12" }),
-                React.createElement('line', { x1: "12", y1: "16", x2: "12.01", y2: "16" })
-            );
-
-        const CheckCircle = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('path', { d: "M22 11.08V12a10 10 0 1 1-5.93-9.14" }),
-                React.createElement('polyline', { points: "22,4 12,14.01 9,11.01" })
-            );
-
-        const Wifi = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('path', { d: "M1 8.5A9 9 0 0 1 12 4a9 9 0 0 1 11 4.5" }),
-                React.createElement('path', { d: "M5 12.5a5 5 0 0 1 7-4.5 5 5 0 0 1 7 4.5" }),
-                React.createElement('circle', { cx: "12", cy: "16", r: "1" })
-            );
-
-        const WifiOff = ({ className, ...props }) => 
-            React.createElement('svg', { 
-                className, 
-                width: 24, 
-                height: 24, 
-                viewBox: "0 0 24 24", 
-                fill: "none", 
-                stroke: "currentColor", 
-                strokeWidth: 2, 
-                strokeLinecap: "round", 
-                strokeLinejoin: "round",
-                ...props 
-            }, 
-                React.createElement('line', { x1: "1", y1: "1", x2: "23", y2: "23" }),
-                React.createElement('path', { d: "M16.72 11.06A10.94 10.94 0 0 1 19 12.55" }),
-                React.createElement('path', { d: "M5 12.55a10.94 10.94 0 0 1 5.17-2.39" }),
-                React.createElement('path', { d: "M10.71 5.05A16 16 0 0 1 22.58 9" }),
-                React.createElement('path', { d: "M1.42 9a15.91 15.91 0 0 1 4.7-2.88" }),
-                React.createElement('path', { d: "M8.53 16.11a6 6 0 0 1 6.95 0" }),
-                React.createElement('line', { x1: "12", y1: "20", x2: "12.01", y2: "20" })
-            );
-
-        const KDPDashboard = () => {
-            const [books, setBooks] = useState([]);
-            const [isLoading, setIsLoading] = useState(true);
-            const [isConnected, setIsConnected] = useState(false);
-            const [lastSync, setLastSync] = useState(null);
-            const [syncStatus, setSyncStatus] = useState('idle');
-            const [errorMessage, setErrorMessage] = useState('');
-            const [totalMetrics, setTotalMetrics] = useState({
-                grossRoyalties: 0,
-                totalSales: 0,
-                kenpReads: 0,
-                netRoyalties: 0,
-                averageRoyaltyPerSale: 0
-            });
-
-            // Check extension connection
-            const checkExtensionConnection = async () => {
-                try {
-                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                        chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
-                            if (chrome.runtime.lastError) {
-                                setIsConnected(false);
-                                setErrorMessage('KDP Extension not installed or disabled');
-                                loadDemoData();
-                            } else {
-                                setIsConnected(true);
-                                loadSavedData();
-                            }
-                        });
-                    } else {
-                        loadDemoData();
-                    }
-                } catch (error) {
-                    console.error('Extension connection error:', error);
-                    setIsConnected(false);
-                    setErrorMessage('Extension not available - Using demo data');
-                    loadDemoData();
-                }
-            };
-
-            const loadSavedData = () => {
-                try {
-                    if (typeof chrome !== 'undefined' && chrome.runtime) {
-                        chrome.runtime.sendMessage({ action: 'getData' }, (response) => {
-                            if (response && response.success && response.data) {
-                                processKDPData(response.data);
-                                setLastSync(new Date(response.data.timestamp || Date.now()));
-                            } else {
-                                loadFromLocalStorage();
-                            }
-                            setIsLoading(false);
-                        });
-                    } else {
-                        loadFromLocalStorage();
-                    }
-                } catch (error) {
-                    console.error('Data loading error:', error);
-                    loadFromLocalStorage();
-                }
-            };
-
-            const loadFromLocalStorage = () => {
-                try {
-                    const savedData = localStorage.getItem('kdp_dashboard_data');
-                    if (savedData) {
-                        const data = JSON.parse(savedData);
-                        processKDPData(data);
-                        setLastSync(new Date(data.timestamp || Date.now()));
-                        setIsConnected(true);
-                    } else {
-                        loadDemoData();
-                    }
-                } catch (error) {
-                    console.error('LocalStorage error:', error);
-                    loadDemoData();
-                }
-                setIsLoading(false);
-            };
-
-            const loadDemoData = () => {
-                const demoBooks = [
-                    {
-                        id: 'demo_1',
-                        title: "Connect your KDP account to see real data",
-                        asin: "DEMO1234",
-                        paperbackSales: 0,
-                        paperbackRoyalties: 0,
-                        ebookSales: 0,
-                        ebookRoyalties: 0,
-                        hardcoverSales: 0,
-                        hardcoverRoyalties: 0,
-                        kenpReads: 0,
-                        kenpRoyalties: 0,
-                        totalRoyalties: 0,
-                        country: "US",
-                        marketplace: "amazon.com",
-                        publishDate: "2024-01-15",
-                        lastUpdated: new Date().toISOString()
-                    }
-                ];
-                
-                setBooks(demoBooks);
-                calculateTotalMetrics(demoBooks);
-                setIsConnected(false);
-                setErrorMessage('Install KDP Extension and sync your account for real data');
-                setIsLoading(false);
-            };
-
-            const processKDPData = (rawData) => {
-                try {
-                    let processedBooks = [];
-                    
-                    if (rawData.books && Array.isArray(rawData.books)) {
-                        processedBooks = rawData.books.map((book, index) => ({
-                            id: book.asin || book.id || `book_${index}`,
-                            title: book.title || book.name || `Untitled Book ${index + 1}`,
-                            asin: book.asin || '',
-                            paperbackSales: book.paperbackSales || book.paperback_units || 0,
-                            paperbackRoyalties: book.paperbackRoyalties || book.paperback_revenue || 0,
-                            ebookSales: book.ebookSales || book.ebook_units || book.digitalSales || 0,
-                            ebookRoyalties: book.ebookRoyalties || book.ebook_revenue || book.digitalRoyalties || 0,
-                            hardcoverSales: book.hardcoverSales || book.hardcover_units || 0,
-                            hardcoverRoyalties: book.hardcoverRoyalties || book.hardcover_revenue || 0,
-                            kenpReads: book.kenpReads || book.kenp_reads || book.reads || 0,
-                            kenpRoyalties: book.kenpRoyalties || book.kenp_royalties || book.readsRevenue || 0,
-                            totalRoyalties: book.totalRoyalties || book.revenue || book.royalties || 0,
-                            totalSales: (book.paperbackSales || 0) + (book.ebookSales || 0) + (book.hardcoverSales || 0),
-                            country: book.country || book.marketplace || "US",
-                            marketplace: book.marketplace || "amazon.com",
-                            publishDate: book.publishDate || book.publish_date || '',
-                            lastUpdated: book.lastUpdated || book.extractedAt || new Date().toISOString(),
-                            category: book.category || 'General',
-                            series: book.series || '',
-                            rank: book.rank || 0
-                        }));
-                    }
-                    
-                    processedBooks.sort((a, b) => b.totalRoyalties - a.totalRoyalties);
-                    
-                    setBooks(processedBooks);
-                    calculateTotalMetrics(processedBooks);
-                    setSyncStatus('success');
-                    setErrorMessage('');
-                    
-                } catch (error) {
-                    console.error('Data processing error:', error);
-                    setErrorMessage('Error processing KDP data');
-                    setSyncStatus('error');
-                }
-            };
-
-            const calculateTotalMetrics = (booksData) => {
-                const totals = booksData.reduce((acc, book) => ({
-                    grossRoyalties: acc.grossRoyalties + (book.totalRoyalties || 0),
-                    totalSales: acc.totalSales + (book.totalSales || 0),
-                    kenpReads: acc.kenpReads + (book.kenpReads || 0),
-                    netRoyalties: acc.netRoyalties + (book.totalRoyalties || 0)
-                }), { grossRoyalties: 0, totalSales: 0, kenpReads: 0, netRoyalties: 0 });
-                
-                totals.averageRoyaltyPerSale = totals.totalSales > 0 ? totals.grossRoyalties / totals.totalSales : 0;
-                
-                setTotalMetrics(totals);
-            };
-
-            const forceSync = async () => {
-                setSyncStatus('syncing');
-                setErrorMessage('');
-                
-                try {
-                    if (typeof chrome !== 'undefined' && chrome.runtime) {
-                        chrome.runtime.sendMessage({ action: 'forceSync' }, (response) => {
-                            if (response && response.success) {
-                                setTimeout(() => {
-                                    loadSavedData();
-                                    setSyncStatus('success');
-                                    setLastSync(new Date());
-                                }, 3000);
-                            } else {
-                                setSyncStatus('error');
-                                setErrorMessage('Sync failed - Make sure you are on KDP Reports page');
-                            }
-                        });
-                    } else {
-                        setTimeout(() => {
-                            setSyncStatus('success');
-                            setLastSync(new Date());
-                            setErrorMessage('');
-                        }, 2000);
-                    }
-                } catch (error) {
-                    setSyncStatus('error');
-                    setErrorMessage('Sync failed: ' + error.message);
-                }
-            };
-
-            useEffect(() => {
-                checkExtensionConnection();
-            }, []);
-
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    if (isConnected && syncStatus !== 'syncing') {
-                        loadSavedData();
-                    }
-                }, 5 * 60 * 1000);
-                
-                return () => clearInterval(interval);
-            }, [isConnected, syncStatus]);
-
-            const topBooks = books.slice(0, 6);
-            const countryData = generateCountryData(books);
-            const formatData = generateFormatData(books);
-
-            function generateCountryData(books) {
-                const countries = {};
-                books.forEach(book => {
-                    const country = book.country || 'US';
-                    if (!countries[country]) {
-                        countries[country] = { country, royalties: 0, sales: 0, flag: getCountryFlag(country) };
-                    }
-                    countries[country].royalties += book.totalRoyalties || 0;
-                    countries[country].sales += book.totalSales || 0;
-                });
-                
-                const totalRoyalties = Object.values(countries).reduce((sum, c) => sum + c.royalties, 0);
-                return Object.values(countries).map(c => ({
-                    ...c,
-                    percentage: totalRoyalties > 0 ? ((c.royalties / totalRoyalties) * 100).toFixed(1) : 0
-                }));
+        class KDPAnalyticsDashboard {
+            constructor() {
+                this.data = null;
+                this.isSetup = false;
+                this.isLoading = true;
+                this.init();
             }
             
-            function generateFormatData(books) {
-                const totals = books.reduce((acc, book) => ({
-                    paperback: acc.paperback + (book.paperbackRoyalties || 0),
-                    ebook: acc.ebook + (book.ebookRoyalties || 0),
-                    hardcover: acc.hardcover + (book.hardcoverRoyalties || 0),
-                    kenp: acc.kenp + (book.kenpRoyalties || 0)
-                }), { paperback: 0, ebook: 0, hardcover: 0, kenp: 0 });
+            async init() {
+                await this.checkSetupStatus();
+                this.render();
                 
-                return [
-                    { name: 'Paperback', value: totals.paperback, color: '#4f46e5' },
-                    { name: 'eBook', value: totals.ebook, color: '#059669' },
-                    { name: 'Hardcover', value: totals.hardcover, color: '#dc2626' },
-                    { name: 'KENP', value: totals.kenp, color: '#7c3aed' }
-                ].filter(item => item.value > 0);
+                if (this.isSetup) {
+                    this.startAutoRefresh();
+                }
             }
             
-            function getCountryFlag(country) {
-                const flags = {
-                    'US': '🇺🇸', 'UK': '🇬🇧', 'CA': '🇨🇦', 'AU': '🇦🇺', 
-                    'DE': '🇩🇪', 'FR': '🇫🇷', 'IT': '🇮🇹', 'ES': '🇪🇸', 
-                    'JP': '🇯🇵', 'BR': '🇧🇷', 'IN': '🇮🇳', 'MX': '🇲🇽'
-                };
-                return flags[country] || '🌍';
+            async checkSetupStatus() {
+                try {
+                    const response = await fetch(`${API_BASE}/api/data`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.data = result.data;
+                        this.isSetup = result.data.isSetup;
+                    }
+                } catch (error) {
+                    console.error('Error checking setup:', error);
+                }
+                this.isLoading = false;
             }
-
-            const formatCurrency = (amount) => `$${(amount || 0).toFixed(2)}`;
-            const formatNumber = (num) => (num || 0).toLocaleString();
-
-            if (isLoading) {
-                return React.createElement('div', { className: "min-h-screen bg-gray-50 flex items-center justify-center" },
-                    React.createElement('div', { className: "text-center" },
-                        React.createElement(RefreshCw, { className: "w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" }),
-                        React.createElement('h2', { className: "text-xl font-semibold text-gray-900" }, "Loading KDP Data..."),
-                        React.createElement('p', { className: "text-gray-500 mt-2" }, "Connecting to your account")
-                    )
-                );
+            
+            async performSetup(email, password, mfaCode = '') {
+                try {
+                    const response = await fetch(`${API_BASE}/api/setup`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password, mfaCode })
+                    });
+                    
+                    const result = await response.json();
+                    return result;
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: 'Setup failed: ' + error.message
+                    };
+                }
             }
-
-            return React.createElement('div', { className: "min-h-screen bg-gray-50" },
-                // Header
-                React.createElement('div', { className: "bg-white shadow-sm border-b" },
-                    React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-4" },
-                        React.createElement('div', { className: "flex items-center justify-between" },
-                            React.createElement('div', { className: "flex items-center space-x-3" },
-                                React.createElement('div', { className: "w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center" },
-                                    React.createElement(Book, { className: "w-6 h-6 text-white" })
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('h1', { className: "text-2xl font-bold text-gray-900" }, "KDP Analytics Pro"),
-                                    React.createElement('p', { className: "text-sm text-gray-500" }, "Real-time Amazon KDP Performance Dashboard")
-                                )
-                            ),
-                            React.createElement('div', { className: "flex items-center space-x-4" },
-                                // Connection Status
-                                React.createElement('div', { className: "flex items-center space-x-2" },
-                                    isConnected ? 
-                                        React.createElement(Wifi, { className: "w-5 h-5 text-green-500" }) :
-                                        React.createElement(WifiOff, { className: "w-5 h-5 text-red-500" }),
-                                    React.createElement('span', { 
-                                        className: `text-sm font-medium ${isConnected ? 'text-green-600' : 'text-red-600'}` 
-                                    }, isConnected ? 'Connected' : 'Disconnected')
-                                ),
-                                // Sync Button
-                                React.createElement('button', {
-                                    onClick: forceSync,
-                                    disabled: syncStatus === 'syncing',
-                                    className: "flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                },
-                                    React.createElement(RefreshCw, { className: `w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}` }),
-                                    React.createElement('span', null, syncStatus === 'syncing' ? 'Syncing...' : 'Force Sync')
-                                ),
-                                // Last Sync
-                                React.createElement('div', { className: "text-right" },
-                                    React.createElement('div', { className: "text-sm text-gray-500" }, "Last Sync"),
-                                    React.createElement('div', { className: "text-sm font-semibold" },
-                                        lastSync ? lastSync.toLocaleString() : 'Never'
-                                    )
-                                )
-                            )
-                        ),
-                        // Status Messages
-                        errorMessage && React.createElement('div', { className: "mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2" },
-                            React.createElement(AlertCircle, { className: "w-5 h-5 text-red-500" }),
-                            React.createElement('span', { className: "text-red-700 text-sm" }, errorMessage)
-                        ),
-                        syncStatus === 'success' && !errorMessage && React.createElement('div', { className: "mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2" },
-                            React.createElement(CheckCircle, { className: "w-5 h-5 text-green-500" }),
-                            React.createElement('span', { className: "text-green-700 text-sm" }, "Data synchronized successfully")
-                        )
-                    )
-                ),
-
-                React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-6" },
-                    // Key Metrics
-                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" },
-                        React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                            React.createElement('div', { className: "flex items-center justify-between" },
-                                React.createElement('div', null,
-                                    React.createElement('p', { className: "text-sm font-medium text-gray-500" }, "Gross Royalties"),
-                                    React.createElement('p', { className: "text-2xl font-bold text-gray-900" }, formatCurrency(totalMetrics.grossRoyalties))
-                                ),
-                                React.createElement('div', { className: "w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center" },
-                                    React.createElement(DollarSign, { className: "w-6 h-6 text-green-600" })
-                                )
-                            ),
-                            React.createElement('div', { className: "flex items-center mt-3" },
-                                React.createElement(TrendingUp, { className: "w-4 h-4 text-green-500 mr-1" }),
-                                React.createElement('span', { className: "text-sm text-green-600 font-medium" }, "Real-time data")
-                            )
-                        ),
-
-                        React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                            React.createElement('div', { className: "flex items-center justify-between" },
-                                React.createElement('div', null,
-                                    React.createElement('p', { className: "text-sm font-medium text-gray-500" }, "Total Sales"),
-                                    React.createElement('p', { className: "text-2xl font-bold text-gray-900" }, formatNumber(totalMetrics.totalSales))
-                                ),
-                                React.createElement('div', { className: "w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center" },
-                                    React.createElement(Target, { className: "w-6 h-6 text-blue-600" })
-                                )
-                            ),
-                            React.createElement('div', { className: "flex items-center mt-3" },
-                                React.createElement('span', { className: "text-sm text-gray-600" }, `Avg per sale: ${formatCurrency(totalMetrics.averageRoyaltyPerSale)}`)
-                            )
-                        ),
-
-                        React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                            React.createElement('div', { className: "flex items-center justify-between" },
-                                React.createElement('div', null,
-                                    React.createElement('p', { className: "text-sm font-medium text-gray-500" }, "KENP Reads"),
-                                    React.createElement('p', { className: "text-2xl font-bold text-gray-900" }, formatNumber(totalMetrics.kenpReads))
-                                ),
-                                React.createElement('div', { className: "w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center" },
-                                    React.createElement(Eye, { className: "w-6 h-6 text-purple-600" })
-                                )
-                            ),
-                            React.createElement('div', { className: "flex items-center mt-3" },
-                                React.createElement('span', { className: "text-sm text-gray-600" }, "From KU readers")
-                            )
-                        ),
-
-                        React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                            React.createElement('div', { className: "flex items-center justify-between" },
-                                React.createElement('div', null,
-                                    React.createElement('p', { className: "text-sm font-medium text-gray-500" }, "Active Books"),
-                                    React.createElement('p', { className: "text-2xl font-bold text-gray-900" }, books.length)
-                                ),
-                                React.createElement('div', { className: "w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center" },
-                                    React.createElement(Book, { className: "w-6 h-6 text-orange-600" })
-                                )
-                            ),
-                            React.createElement('div', { className: "flex items-center mt-3" },
-                                React.createElement('span', { className: "text-sm text-gray-600" }, "Published titles")
-                            )
-                        )
-                    ),
-
-                    // Charts Row
-                    React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" },
-                        // Top Performers
-                        React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                            React.createElement('h3', { className: "text-lg font-semibold text-gray-900 mb-4 flex items-center" },
-                                React.createElement(Award, { className: "w-5 h-5 text-yellow-500 mr-2" }),
-                                "Top Performing Books"
-                            ),
-                            React.createElement('div', { className: "space-y-4" },
-                                topBooks.map((book, index) =>
-                                    React.createElement('div', { 
-                                        key: book.id, 
-                                        className: "flex items-center justify-between p-3 bg-gray-50 rounded-lg" 
-                                    },
-                                        React.createElement('div', { className: "flex items-center space-x-3" },
-                                            React.createElement('div', { className: "w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold" },
-                                                `#${index + 1}`
-                                            ),
-                                            React.createElement('div', null,
-                                                React.createElement('p', { className: "font-medium text-gray-900 text-sm" }, book.title),
-                                                React.createElement('p', { className: "text-xs text-gray-500" }, `Sales: ${book.totalSales} • ASIN: ${book.asin}`)
-                                            )
-                                        ),
-                                        React.createElement('div', { className: "text-right" },
-                                            React.createElement('p', { className: "font-bold text-green-600" }, formatCurrency(book.totalRoyalties)),
-                                            React.createElement('p', { className: "text-xs text-gray-500" }, "Total Revenue")
-                                        )
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Revenue by Format (Simple version without external charts)
-                        React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                            React.createElement('h3', { className: "text-lg font-semibold text-gray-900 mb-4 flex items-center" },
-                                React.createElement(Book, { className: "w-5 h-5 text-blue-500 mr-2" }),
-                                "Revenue by Format"
-                            ),
-                            React.createElement('div', { className: "space-y-4" },
-                                formatData.map((format, index) =>
-                                    React.createElement('div', { 
-                                        key: format.name, 
-                                        className: "flex items-center justify-between" 
-                                    },
-                                        React.createElement('div', { className: "flex items-center space-x-3" },
-                                            React.createElement('div', { 
-                                                className: "w-4 h-4 rounded-full",
-                                                style: { backgroundColor: format.color }
-                                            }),
-                                            React.createElement('span', { className: "text-sm font-medium text-gray-900" }, format.name)
-                                        ),
-                                        React.createElement('span', { className: "text-sm font-bold text-gray-900" }, formatCurrency(format.value))
-                                    )
-                                )
-                            )
-                        )
-                    ),
-
-                    // Detailed Book Performance
-                    React.createElement('div', { className: "bg-white rounded-xl shadow-sm border border-gray-100 mb-8" },
-                        React.createElement('div', { className: "p-6 border-b border-gray-100" },
-                            React.createElement('h3', { className: "text-lg font-semibold text-gray-900" }, "Your Books Performance"),
-                            React.createElement('p', { className: "text-sm text-gray-500 mt-1" }, "Real-time data from your KDP account")
-                        ),
-                        React.createElement('div', { className: "overflow-x-auto" },
-                            React.createElement('table', { className: "w-full" },
-                                React.createElement('thead', { className: "bg-gray-50" },
-                                    React.createElement('tr', null,
-                                        React.createElement('th', { className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" }, "Title"),
-                                        React.createElement('th', { className: "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" }, "Paperback"),
-                                        React.createElement('th', { className: "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" }, "eBook"),
-                                        React.createElement('th', { className: "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" }, "Hardcover"),
-                                        React.createElement('th', { className: "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" }, "KENP Reads"),
-                                        React.createElement('th', { className: "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" }, "Total Revenue"),
-                                        React.createElement('th', { className: "px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" }, "Country")
-                                    )
-                                ),
-                                React.createElement('tbody', { className: "bg-white divide-y divide-gray-200" },
-                                    books.map((book, index) =>
-                                        React.createElement('tr', { 
-                                            key: book.id, 
-                                            className: "hover:bg-gray-50" 
-                                        },
-                                            React.createElement('td', { className: "px-6 py-4" },
-                                                React.createElement('div', null,
-                                                    React.createElement('p', { className: "font-medium text-gray-900 text-sm" }, book.title),
-                                                    React.createElement('p', { className: "text-xs text-gray-500" }, `ASIN: ${book.asin || 'N/A'}`),
-                                                    book.publishDate && React.createElement('p', { className: "text-xs text-gray-500" }, 
-                                                        `Published: ${new Date(book.publishDate).toLocaleDateString()}`
-                                                    )
-                                                )
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                React.createElement('div', null,
-                                                    React.createElement('p', { className: "text-sm font-medium text-gray-900" }, book.paperbackSales || 0),
-                                                    React.createElement('p', { className: "text-xs text-green-600" }, formatCurrency(book.paperbackRoyalties))
-                                                )
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                React.createElement('div', null,
-                                                    React.createElement('p', { className: "text-sm font-medium text-gray-900" }, book.ebookSales || 0),
-                                                    React.createElement('p', { className: "text-xs text-green-600" }, formatCurrency(book.ebookRoyalties))
-                                                )
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                React.createElement('div', null,
-                                                    React.createElement('p', { className: "text-sm font-medium text-gray-900" }, book.hardcoverSales || 0),
-                                                    React.createElement('p', { className: "text-xs text-green-600" }, formatCurrency(book.hardcoverRoyalties))
-                                                )
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                React.createElement('div', null,
-                                                    React.createElement('p', { className: "text-sm font-medium text-gray-900" }, formatNumber(book.kenpReads)),
-                                                    React.createElement('p', { className: "text-xs text-green-600" }, formatCurrency(book.kenpRoyalties))
-                                                )
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                React.createElement('p', { className: "text-lg font-bold text-green-600" }, formatCurrency(book.totalRoyalties))
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                React.createElement('span', { className: "text-lg" }, getCountryFlag(book.country)),
-                                                React.createElement('p', { className: "text-xs text-gray-500" }, book.country)
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
+            
+            async forceSync() {
+                try {
+                    const response = await fetch(`${API_BASE}/api/sync`, {
+                        method: 'POST'
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.data = { ...this.data, ...result.data };
+                        this.render();
+                    }
+                    
+                    return result;
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: 'Sync failed: ' + error.message
+                    };
+                }
+            }
+            
+            startAutoRefresh() {
+                // Refresh data every 2 minutes
+                setInterval(async () => {
+                    await this.checkSetupStatus();
+                    this.render();
+                }, 2 * 60 * 1000);
+            }
+            
+            render() {
+                const app = document.getElementById('app');
+                
+                if (this.isLoading) {
+                    app.innerHTML = this.renderLoading();
+                } else if (!this.isSetup) {
+                    app.innerHTML = this.renderSetup();
+                    this.bindSetupEvents();
+                } else {
+                    app.innerHTML = this.renderDashboard();
+                    this.bindDashboardEvents();
+                }
+            }
+            
+            renderLoading() {
+                return `
+                    <div class="setup-form">
+                        <div class="setup-card">
+                            <div class="loading-spinner" style="margin: 0 auto 20px;"></div>
+                            <h2 style="text-align: center; color: #374151; margin: 0;">Loading KDP Analytics...</h2>
+                            <p style="text-align: center; color: #6b7280; margin: 10px 0 0;">Checking setup status</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderSetup() {
+                return `
+                    <div class="setup-form">
+                        <div class="setup-card">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h1 style="font-size: 1.875rem; font-weight: bold; color: #111827; margin: 0 0 0.5rem;">🚀 KDP Analytics Pro</h1>
+                                <p style="color: #6b7280; margin: 0;">One-time setup with your Amazon KDP credentials</p>
+                            </div>
                             
-                            books.length === 0 && React.createElement('div', { className: "text-center py-12" },
-                                React.createElement(Book, { className: "w-12 h-12 text-gray-400 mx-auto mb-4" }),
-                                React.createElement('h3', { className: "text-lg font-medium text-gray-900 mb-2" }, "No books found"),
-                                React.createElement('p', { className: "text-gray-500 mb-4" },
-                                    isConnected 
-                                        ? "Click 'Force Sync' to extract data from your KDP account" 
-                                        : "Install the KDP Extension and sync your account to see your books"
-                                ),
-                                React.createElement('button', {
-                                    onClick: forceSync,
-                                    className: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                }, "Sync Now")
-                            )
-                        )
-                    ),
-
-                    // Country Performance
-                    countryData.length > 0 && React.createElement('div', { className: "bg-white rounded-xl shadow-sm p-6 border border-gray-100" },
-                        React.createElement('h3', { className: "text-lg font-semibold text-gray-900 mb-4 flex items-center" },
-                            React.createElement(Globe, { className: "w-5 h-5 text-blue-500 mr-2" }),
-                            "Revenue by Country"
-                        ),
-                        React.createElement('div', { className: "space-y-4" },
-                            countryData.map((country, index) =>
-                                React.createElement('div', { 
-                                    key: country.country, 
-                                    className: "flex items-center justify-between p-3 border border-gray-100 rounded-lg" 
-                                },
-                                    React.createElement('div', { className: "flex items-center space-x-3" },
-                                        React.createElement('span', { className: "text-2xl" }, country.flag),
-                                        React.createElement('div', null,
-                                            React.createElement('p', { className: "font-medium text-gray-900" }, country.country),
-                                            React.createElement('p', { className: "text-sm text-gray-500" }, `${country.sales} sales`)
-                                        )
-                                    ),
-                                    React.createElement('div', { className: "text-right" },
-                                        React.createElement('p', { className: "font-bold text-green-600" }, formatCurrency(country.royalties)),
-                                        React.createElement('p', { className: "text-xs text-gray-500" }, `${country.percentage}% of total`)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            );
-        };
-
-        // Render the dashboard
-        ReactDOM.render(React.createElement(KDPDashboard), document.getElementById('root'));
-    </script>
-</body>
-</html>
+                            <div id="setup-alert"></div>
+                            
+                            <form id="setup-form">
+                                <div class="input-group">
+                                    <label for="email">Amazon Email</label>
+                                    <input type="email" id="email" name="email" required placeholder="your-email@example.com">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="password">Amazon Password</label>
+                                    <input type="password" id="password" name="password" required placeholder="Your Amazon password">
+                                </div>
+                                
+                                <div class="input-group" id="mfa-group" style="display: none;">
+                                    <label for="mfaCode">MFA Code (if required)</label>
+                                    <input type="text" id="mfaCode" name="mfaCode" placeholder="123456">
+                                </div>
+                                
+                                <button type="submit" class="btn-primary" id="setup-btn">
+                                    🔐 Setup & Connect to KDP
+                                </button>
+                            </form>
+                            
+                            <div style="margin-top: 1.5rem; padding: 1rem; background: #f3f4f6; border-radius: 0.5rem;">
+                                <h4 style="margin: 0 0 0.5rem; color: #374151; font-size: 0.875rem;">🔒 Privacy & Security</h4>
+                                <p style="margin: 0; color: #6b7280; font-size: 0.75rem;">
+                                    Your credentials are used only to authenticate with Amazon KDP APIs. 
+                                    No data is stored permanently - only session tokens for sync.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderDashboard() {
+                const books = this.data?.books || [];
+                const totalRevenue = this.data?.totalRevenue || 0;
+                const lastSync = this.data?.lastSync ? new Date(this.data.lastSync).toLocaleString() : 'Never';
+                
+                const totalSales = books.reduce((sum, book) => sum + (book.totalSales || 0), 0);
+                const totalKenpReads = books.reduce((sum, book) => sum + (book.kenpReads || 0), 0);
+                const avgRoyaltyPerSale = totalSales > 0 ? totalRevenue / totalSales : 0;
+                
+                return `
+                    <div class="min-h-screen bg-gray-50">
+                        <!-- Header -->
+                        <div class="bg-white shadow-sm border-b">
+                            <div class="max-w-7xl mx-auto px-4 py-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                            <span class="text-white font-bold">📊</span>
+                                        </div>
+                                        <div>
+                                            <h1 class="text-2xl font-bold text-gray-900">KDP Analytics Pro</h1>
+                                            <p class="text-sm text-gray-500">Auto-Sync Amazon KDP Performance Dashboard</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-4">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                                            <span class="text-sm font-medium text-green-600">Auto-Sync Active</span>
+                                        </div>
+                                        
+                                        <button id="force-sync-btn" class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                            <span>🔄</span>
+                                            <span>Force Sync</span>
+                                        </button>
+                                        
+                                        <div class="text-right">
+                                            <div class="text-sm text-gray-500">Last Sync</div>
+                                            <div class="text-sm font-semibold">${lastSync}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
