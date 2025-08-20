@@ -11,21 +11,17 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             background: #f8fafc;
             color: #1a202c;
             line-height: 1.5;
         }
-
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-
-        /* Header */
         .header {
             background: white;
             border-radius: 12px;
@@ -33,20 +29,12 @@
             margin-bottom: 24px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
         .header h1 {
             font-size: 24px;
             font-weight: 600;
             color: #1a202c;
             margin-bottom: 8px;
         }
-
-        .header .subtitle {
-            color: #718096;
-            font-size: 14px;
-        }
-
-        /* Login Section */
         .login-section {
             background: white;
             border-radius: 12px;
@@ -55,32 +43,22 @@
             max-width: 500px;
             margin: 0 auto;
         }
-
         .form-group {
             margin-bottom: 16px;
         }
-
         .form-group label {
             display: block;
             font-weight: 500;
             margin-bottom: 6px;
             color: #374151;
         }
-
         .form-group input {
             width: 100%;
             padding: 12px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 14px;
-            transition: border-color 0.2s;
         }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-
         .login-button {
             width: 100%;
             background: #3b82f6;
@@ -91,21 +69,13 @@
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
-
-        .login-button:hover {
-            background: #2563eb;
-        }
-
-        /* Summary Cards */
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
-
         .summary-card {
             background: white;
             border-radius: 12px;
@@ -113,69 +83,42 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
         }
-
         .summary-card .value {
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 4px;
+            color: #3b82f6;
         }
-
         .summary-card .label {
             color: #718096;
             font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-
-        .positive { color: #059669; }
-        .negative { color: #dc2626; }
-        .neutral { color: #3b82f6; }
-
-        /* Top Books Section */
-        .top-books {
+        .books-section {
             background: white;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
         .section-title {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 20px;
             color: #1a202c;
         }
-
         .book-item {
             display: flex;
             align-items: center;
             padding: 16px;
             border-bottom: 1px solid #e5e7eb;
-            transition: background-color 0.2s;
+            margin-bottom: 12px;
         }
-
-        .book-item:hover {
-            background: #f9fafb;
-        }
-
-        .book-item:last-child {
-            border-bottom: none;
-        }
-
-        .book-rank {
-            font-size: 18px;
-            font-weight: 600;
-            color: #6b7280;
-            margin-right: 16px;
-            width: 24px;
-        }
-
         .book-cover {
-            width: 40px;
-            height: 60px;
+            width: 50px;
+            height: 70px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px;
+            border-radius: 6px;
             margin-right: 16px;
             display: flex;
             align-items: center;
@@ -184,185 +127,31 @@
             font-weight: 600;
             font-size: 12px;
         }
-
         .book-info {
             flex: 1;
         }
-
         .book-title {
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 4px;
             color: #1a202c;
         }
-
-        .book-metrics {
-            display: flex;
-            gap: 16px;
-            font-size: 13px;
+        .book-meta {
+            font-size: 14px;
             color: #6b7280;
         }
-
         .book-revenue {
             text-align: right;
-            min-width: 100px;
-        }
-
-        .book-revenue .amount {
-            font-size: 16px;
             font-weight: 600;
-            color: #1a202c;
+            color: #059669;
         }
-
-        .book-revenue .spend {
-            font-size: 12px;
-            color: #ef4444;
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
         }
-
-        .book-revenue .net {
-            font-size: 12px;
-            color: #10b981;
-        }
-
-        /* Main Table */
-        .main-table {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow-x: auto;
-        }
-
-        .performance-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .performance-table th {
-            background: #f9fafb;
-            padding: 12px 8px;
-            text-align: left;
-            font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
-            white-space: nowrap;
-        }
-
-        .performance-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #f3f4f6;
-            vertical-align: middle;
-        }
-
-        .performance-table tr:hover {
-            background: #f9fafb;
-        }
-
-        .book-cell {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .book-mini-cover {
-            width: 24px;
-            height: 32px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
-            flex-shrink: 0;
-        }
-
-        .book-name {
-            font-weight: 500;
-            color: #1a202c;
-        }
-
-        /* Charts Section */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .chart-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #1a202c;
-        }
-
-        /* Country Breakdown */
-        .country-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .country-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .country-flag {
-            width: 24px;
-            height: 16px;
-            margin-right: 12px;
-            border-radius: 2px;
-            background: #e5e7eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-        }
-
-        .country-name {
-            flex: 1;
-            font-weight: 500;
-        }
-
-        .country-metrics {
-            display: flex;
-            gap: 16px;
-            font-size: 13px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 12px;
-            }
-            
-            .summary-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .book-metrics {
-                flex-direction: column;
-                gap: 4px;
-            }
-        }
-
         .hidden {
             display: none;
         }
-
         .logout-btn {
             position: absolute;
             top: 20px;
@@ -374,9 +163,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
-            font-weight: 500;
         }
-
         .status-message {
             padding: 12px;
             border-radius: 8px;
@@ -384,33 +171,26 @@
             text-align: center;
             font-size: 14px;
         }
-
         .success {
             background: #d1fae5;
             color: #065f46;
-            border: 1px solid #a7f3d0;
         }
-
         .error {
             background: #fee2e2;
             color: #991b1b;
-            border: 1px solid #fca5a5;
         }
-
         .info {
             background: #dbeafe;
             color: #1e40af;
-            border: 1px solid #93c5fd;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Login Section -->
         <div id="loginSection" class="login-section">
             <div class="header">
-                <h1>🔐 KDP Analytics Dashboard</h1>
-                <p class="subtitle">Professional analytics for your publishing business</p>
+                <h1>KDP Analytics Dashboard</h1>
+                <p>Professional analytics for your publishing business</p>
             </div>
             
             <div class="form-group">
@@ -423,143 +203,44 @@
                 <input type="password" id="password" placeholder="Your password" value="demo123">
             </div>
             
-            <button class="login-button" onclick="handleLogin()">🚀 Access Dashboard</button>
+            <button class="login-button" onclick="handleLogin()">Access Dashboard</button>
             
             <div id="loginMessage" class="status-message" style="display: none;"></div>
         </div>
 
-        <!-- Dashboard Section -->
         <div id="dashboardSection" class="hidden">
             <button class="logout-btn" onclick="handleLogout()">Logout</button>
             
-            <!-- Header -->
             <div class="header">
-                <h1>📚 KDP Analytics Dashboard</h1>
-                <p class="subtitle">Real-time insights for your publishing business • Last updated: <span id="lastUpdate">Never</span></p>
+                <h1>KDP Analytics Dashboard</h1>
+                <p>Last updated: <span id="lastUpdate">Never</span></p>
             </div>
 
-            <!-- Summary Cards -->
             <div class="summary-grid">
                 <div class="summary-card">
-                    <div class="value neutral" id="totalRevenue">$52.02</div>
-                    <div class="label">Gross Royalties</div>
+                    <div class="value" id="totalRevenue">$0.00</div>
+                    <div class="label">Total Revenue</div>
                 </div>
                 <div class="summary-card">
-                    <div class="value negative" id="totalSpend">$0.00</div>
-                    <div class="label">Total Spend</div>
-                </div>
-                <div class="summary-card">
-                    <div class="value positive" id="netRoyalties">$52.02</div>
-                    <div class="label">Net Royalties</div>
-                </div>
-                <div class="summary-card">
-                    <div class="value neutral" id="roi">0%</div>
-                    <div class="label">ROI</div>
-                </div>
-                <div class="summary-card">
-                    <div class="value neutral" id="avgDaily">$8.67</div>
-                    <div class="label">AVG Daily Royalties</div>
-                </div>
-                <div class="summary-card">
-                    <div class="value neutral" id="totalOrders">6</div>
+                    <div class="value" id="totalOrders">0</div>
                     <div class="label">Total Orders</div>
                 </div>
-            </div>
-
-            <!-- Top Performing Books -->
-            <div class="top-books">
-                <h2 class="section-title">📈 Top Performing Books</h2>
-                <div id="topBooksList">
-                    <div class="book-item">
-                        <div class="book-rank">#1</div>
-                        <div class="book-cover">📖</div>
-                        <div class="book-info">
-                            <div class="book-title">Urban Amish Survival Manual</div>
-                            <div class="book-metrics">
-                                <span>Orders: 6</span>
-                                <span>KENP: 0</span>
-                                <span>ROI: 100%</span>
-                            </div>
-                        </div>
-                        <div class="book-revenue">
-                            <div class="amount">$52.02</div>
-                            <div class="spend">Spend: $0.00</div>
-                            <div class="net">Net: $52.02</div>
-                        </div>
-                    </div>
+                <div class="summary-card">
+                    <div class="value" id="totalBooks">0</div>
+                    <div class="label">Books Found</div>
+                </div>
+                <div class="summary-card">
+                    <div class="value" id="totalKenp">0</div>
+                    <div class="label">KENP Reads</div>
                 </div>
             </div>
 
-            <!-- Performance Table -->
-            <div class="main-table">
-                <h2 class="section-title">📊 Performance by Book</h2>
-                <table class="performance-table">
-                    <thead>
-                        <tr>
-                            <th>Cover</th>
-                            <th>Title</th>
-                            <th>Paperbacks</th>
-                            <th>Hardcovers</th>
-                            <th>Ebooks (Paid)</th>
-                            <th>Ebooks (Free)</th>
-                            <th>Audiobooks</th>
-                            <th>KENP Reads</th>
-                            <th>Total Royalties</th>
-                            <th>Total Spending</th>
-                            <th>Net Royalties</th>
-                            <th>ROI</th>
-                        </tr>
-                    </thead>
-                    <tbody id="performanceTableBody">
-                        <tr>
-                            <td>
-                                <div class="book-cell">
-                                    <div class="book-mini-cover"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="book-name">Urban Amish Survival Manual</div>
-                            </td>
-                            <td>6 | $52.02</td>
-                            <td>0 | $0.00</td>
-                            <td>0 | $0.00</td>
-                            <td>0 | $0.00</td>
-                            <td>0 | $0.00</td>
-                            <td>0 | $0.00</td>
-                            <td class="positive">$52.02</td>
-                            <td class="negative">$0.00</td>
-                            <td class="positive">$52.02</td>
-                            <td class="positive">100%</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Charts -->
-            <div class="charts-grid">
-                <div class="chart-container">
-                    <div class="chart-title">📈 Revenue vs Spend Trend</div>
-                    <canvas id="trendChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-title">🍰 Revenue by Format</div>
-                    <canvas id="formatChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Country Breakdown -->
-            <div class="country-section">
-                <h2 class="section-title">🌍 Country Breakdown</h2>
-                <div id="countryList">
-                    <div class="country-item">
-                        <div class="country-flag">🇺🇸</div>
-                        <div class="country-name">United States</div>
-                        <div class="country-metrics">
-                            <span>Orders: 6</span>
-                            <span>Revenue: $52.02</span>
-                            <span>Spend: $0.00</span>
-                            <span class="positive">Net: $52.02</span>
-                        </div>
+            <div class="books-section">
+                <h2 class="section-title">Your Books</h2>
+                <div id="booksList">
+                    <div class="empty-state">
+                        <h3>No books found yet</h3>
+                        <p>Use the browser extension to sync data from your KDP account.</p>
                     </div>
                 </div>
             </div>
@@ -567,48 +248,22 @@
     </div>
 
     <script>
-        // Global variables
-        let charts = {};
-        let dashboardData = {
-            revenue: 52.02,
-            spend: 0,
-            orders: 6,
-            kenp: 0,
-            books: [
-                {
-                    title: "Urban Amish Survival Manual",
-                    revenue: 52.02,
-                    spend: 0,
-                    orders: 6,
-                    kenp: 0,
-                    formats: {
-                        paperback: { orders: 6, revenue: 52.02 },
-                        hardcover: { orders: 0, revenue: 0 },
-                        ebook: { orders: 0, revenue: 0 },
-                        audiobook: { orders: 0, revenue: 0 }
-                    }
-                }
-            ],
-            dailyData: [
-                { date: '2025-08-16', revenue: 10.47, spend: 0 },
-                { date: '2025-08-17', revenue: 9.27, spend: 0 },
-                { date: '2025-08-18', revenue: 8.07, spend: 0 },
-                { date: '2025-08-19', revenue: 16.14, spend: 0 },
-                { date: '2025-08-20', revenue: 8.07, spend: 0 }
-            ]
+        var allBooks = [];
+        var dashboardData = {
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalKenp: 0
         };
 
-        // Check if user is already logged in
         window.addEventListener('load', function() {
             if (localStorage.getItem('isLoggedIn') === 'true') {
                 showDashboard();
             }
         });
 
-        // Handle login
         function handleLogin() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
             
             if (!email || !password) {
                 showMessage('Please enter both email and password', 'error');
@@ -617,18 +272,17 @@
             
             showMessage('Connecting to dashboard...', 'info');
             
-            setTimeout(() => {
+            setTimeout(function() {
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('userEmail', email);
-                showMessage('Login successful! Loading dashboard...', 'success');
+                showMessage('Login successful!', 'success');
                 
-                setTimeout(() => {
+                setTimeout(function() {
                     showDashboard();
                 }, 1000);
             }, 1000);
         }
 
-        // Handle logout
         function handleLogout() {
             localStorage.removeItem('isLoggedIn');
             localStorage.removeItem('userEmail');
@@ -636,196 +290,58 @@
             document.getElementById('loginSection').classList.remove('hidden');
         }
 
-        // Show dashboard
         function showDashboard() {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
-            
             updateLastUpdateTime();
-            updateSummaryCards();
-            updateTopBooks();
-            updatePerformanceTable();
-            initializeCharts();
             setupExtensionListener();
         }
 
-        // Show message
         function showMessage(message, type) {
-            const messageDiv = document.getElementById('loginMessage');
+            var messageDiv = document.getElementById('loginMessage');
             messageDiv.textContent = message;
-            messageDiv.className = `status-message ${type}`;
+            messageDiv.className = 'status-message ' + type;
             messageDiv.style.display = 'block';
         }
 
-        // Update last update time
         function updateLastUpdateTime() {
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
         }
 
-        // Update summary cards
         function updateSummaryCards() {
-            const data = dashboardData;
-            const netRoyalties = data.revenue - data.spend;
-            const roi = data.spend > 0 ? ((data.revenue / data.spend - 1) * 100).toFixed(0) : 0;
-            const avgDaily = (data.revenue / 6).toFixed(2); // 6 days of data
-
-            document.getElementById('totalRevenue').textContent = `$${data.revenue.toFixed(2)}`;
-            document.getElementById('totalSpend').textContent = `$${data.spend.toFixed(2)}`;
-            document.getElementById('netRoyalties').textContent = `$${netRoyalties.toFixed(2)}`;
-            document.getElementById('roi').textContent = `${roi}%`;
-            document.getElementById('avgDaily').textContent = `$${avgDaily}`;
-            document.getElementById('totalOrders').textContent = data.orders;
+            document.getElementById('totalRevenue').textContent = '$' + dashboardData.totalRevenue.toFixed(2);
+            document.getElementById('totalOrders').textContent = dashboardData.totalOrders;
+            document.getElementById('totalBooks').textContent = allBooks.length;
+            document.getElementById('totalKenp').textContent = dashboardData.totalKenp;
         }
 
-        // Update top books
-        function updateTopBooks() {
-            const topBooksList = document.getElementById('topBooksList');
-            topBooksList.innerHTML = '';
-
-            dashboardData.books.forEach((book, index) => {
-                const netRoyalties = book.revenue - book.spend;
-                const roi = book.spend > 0 ? ((book.revenue / book.spend - 1) * 100).toFixed(0) : 100;
-
-                const bookItem = document.createElement('div');
+        function updateBooksList() {
+            var container = document.getElementById('booksList');
+            container.innerHTML = '';
+            
+            if (allBooks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No books found yet</h3><p>Use the browser extension to sync data from your KDP account.</p></div>';
+                return;
+            }
+            
+            allBooks.forEach(function(book) {
+                var bookItem = document.createElement('div');
                 bookItem.className = 'book-item';
-                bookItem.innerHTML = `
-                    <div class="book-rank">#${index + 1}</div>
-                    <div class="book-cover">📖</div>
-                    <div class="book-info">
-                        <div class="book-title">${book.title}</div>
-                        <div class="book-metrics">
-                            <span>Orders: ${book.orders}</span>
-                            <span>KENP: ${book.kenp}</span>
-                            <span>ROI: ${roi}%</span>
-                        </div>
-                    </div>
-                    <div class="book-revenue">
-                        <div class="amount">$${book.revenue.toFixed(2)}</div>
-                        <div class="spend">Spend: $${book.spend.toFixed(2)}</div>
-                        <div class="net">Net: $${netRoyalties.toFixed(2)}</div>
-                    </div>
-                `;
-                topBooksList.appendChild(bookItem);
+                
+                var bookInitials = book.title.substring(0, 2).toUpperCase();
+                
+                bookItem.innerHTML = 
+                    '<div class="book-cover">' + bookInitials + '</div>' +
+                    '<div class="book-info">' +
+                        '<div class="book-title">' + book.title + '</div>' +
+                        '<div class="book-meta">Orders: ' + (book.orders || 0) + ' | KENP: ' + (book.kenp || 0) + '</div>' +
+                    '</div>' +
+                    '<div class="book-revenue">$' + (book.royalties || 0).toFixed(2) + '</div>';
+                
+                container.appendChild(bookItem);
             });
         }
 
-        // Update performance table
-        function updatePerformanceTable() {
-            const tableBody = document.getElementById('performanceTableBody');
-            tableBody.innerHTML = '';
-
-            dashboardData.books.forEach(book => {
-                const netRoyalties = book.revenue - book.spend;
-                const roi = book.spend > 0 ? ((book.revenue / book.spend - 1) * 100).toFixed(0) : 100;
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>
-                        <div class="book-cell">
-                            <div class="book-mini-cover"></div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="book-name">${book.title}</div>
-                    </td>
-                    <td>${book.formats.paperback.orders} | $${book.formats.paperback.revenue.toFixed(2)}</td>
-                    <td>${book.formats.hardcover.orders} | $${book.formats.hardcover.revenue.toFixed(2)}</td>
-                    <td>${book.formats.ebook.orders} | $${book.formats.ebook.revenue.toFixed(2)}</td>
-                    <td>0 | $0.00</td>
-                    <td>${book.formats.audiobook.orders} | $${book.formats.audiobook.revenue.toFixed(2)}</td>
-                    <td>${book.kenp} | $0.00</td>
-                    <td class="positive">$${book.revenue.toFixed(2)}</td>
-                    <td class="negative">$${book.spend.toFixed(2)}</td>
-                    <td class="${netRoyalties >= 0 ? 'positive' : 'negative'}">$${netRoyalties.toFixed(2)}</td>
-                    <td class="${roi >= 0 ? 'positive' : 'negative'}">${roi}%</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        // Initialize charts
-        function initializeCharts() {
-            // Revenue vs Spend Trend Chart
-            const trendCtx = document.getElementById('trendChart').getContext('2d');
-            charts.trend = new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: dashboardData.dailyData.map(d => {
-                        const date = new Date(d.date);
-                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    }),
-                    datasets: [{
-                        label: 'Revenue',
-                        data: dashboardData.dailyData.map(d => d.revenue),
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'Ad Spend',
-                        data: dashboardData.dailyData.map(d => d.spend),
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Revenue by Format Chart
-            const formatCtx = document.getElementById('formatChart').getContext('2d');
-            const book = dashboardData.books[0];
-            charts.format = new Chart(formatCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Paperback', 'Hardcover', 'eBook', 'Audiobook'],
-                    datasets: [{
-                        data: [
-                            book.formats.paperback.revenue,
-                            book.formats.hardcover.revenue,
-                            book.formats.ebook.revenue,
-                            book.formats.audiobook.revenue
-                        ],
-                        backgroundColor: [
-                            '#3b82f6',
-                            '#8b5cf6',
-                            '#10b981',
-                            '#f59e0b'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
-
-        // Setup extension listener
         function setupExtensionListener() {
             window.addEventListener('message', function(event) {
                 if (event.data && event.data.type === 'KDP_SYNC_DATA') {
@@ -834,32 +350,52 @@
             });
         }
 
-        // Update dashboard with extension data
         function updateDashboardWithExtensionData(data) {
             console.log('Received extension data:', data);
             
-            if (data.extractedData && data.extractedData.moneyElements) {
-                let totalRevenue = 0;
-                data.extractedData.moneyElements.forEach(element => {
-                    const amount = parseFloat(element.amount.replace('$', '').replace(',', ''));
-                    if (!isNaN(amount)) {
-                        totalRevenue += amount;
-                    }
+            allBooks = [];
+            dashboardData = {
+                totalRevenue: 0,
+                totalOrders: 0,
+                totalKenp: 0
+            };
+            
+            if (data.books && data.books.length > 0) {
+                allBooks = data.books.map(function(book) {
+                    return {
+                        title: book.title || 'Unknown Title',
+                        royalties: book.royalties || 0,
+                        orders: book.orders || 0,
+                        kenp: book.kenp || 0,
+                        asin: book.asin || '',
+                        marketplace: book.marketplace || 'US'
+                    };
                 });
                 
-                if (totalRevenue > 0) {
-                    dashboardData.revenue = totalRevenue;
-                    updateSummaryCards();
-                    updateTopBooks();
-                    updatePerformanceTable();
+                allBooks.forEach(function(book) {
+                    dashboardData.totalRevenue += book.royalties;
+                    dashboardData.totalOrders += book.orders;
+                    dashboardData.totalKenp += book.kenp;
+                });
+                
+                console.log('Found ' + allBooks.length + ' books');
+            }
+            
+            if (data.summary) {
+                if (data.summary.totalRoyalties > 0) {
+                    dashboardData.totalRevenue = Math.max(dashboardData.totalRevenue, data.summary.totalRoyalties);
+                }
+                if (data.summary.totalOrders > 0) {
+                    dashboardData.totalOrders = Math.max(dashboardData.totalOrders, data.summary.totalOrders);
                 }
             }
             
+            updateSummaryCards();
+            updateBooksList();
             updateLastUpdateTime();
         }
 
-        // API endpoint for extension sync
-        async function handleSync(data) {
+        function handleSync(data) {
             console.log('Dashboard received sync data:', data);
             updateDashboardWithExtensionData(data);
             return { status: 'success', message: 'Data synced successfully' };
