@@ -1,21 +1,17 @@
 {
   "name": "kdp-analytics-dashboard",
-  "version": "1.0.0",
-  "description": "Personal KDP and Amazon Ads Analytics Dashboard",
+  "version": "2.0.0",
+  "description": "KDP Analytics Pro - Real-time Amazon KDP Performance Dashboard",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "echo 'No build step needed for static site'"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "crypto": "^1.0.1"
+    "express": "^4.18.2"
   },
   "engines": {
     "node": "18.x"
-  },
-  "keywords": ["kdp", "amazon-ads", "analytics", "dashboard"],
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
