@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "KDP Analytics Extension",
-  "version": "1.0",
-  "description": "Automatically sync Amazon KDP data with your personal analytics dashboard",
+  "name": "KDP Analytics Pro - Rainbook Editions",
+  "version": "2.0.0",
+  "description": "Estrazione automatica dati Amazon KDP per Rainbook Editions",
   
   "permissions": [
     "cookies",
@@ -15,6 +15,12 @@
     "https://kdpreports.amazon.com/*",
     "https://kdp.amazon.com/*",
     "https://advertising.amazon.com/*",
+    "https://*.amazon.com/*",
+    "https://*.amazon.co.uk/*",
+    "https://*.amazon.de/*",
+    "https://*.amazon.fr/*",
+    "https://*.amazon.it/*",
+    "https://*.amazon.es/*",
     "https://kdp-analytics-dashboard.vercel.app/*"
   ],
   
@@ -26,7 +32,8 @@
     {
       "matches": [
         "https://kdpreports.amazon.com/*",
-        "https://kdp.amazon.com/*"
+        "https://kdp.amazon.com/*",
+        "https://advertising.amazon.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_end"
@@ -35,19 +42,12 @@
   
   "action": {
     "default_popup": "popup.html",
-    "default_title": "KDP Analytics Sync"
+    "default_title": "KDP Analytics Pro - Rainbook Editions"
   },
   
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  },
-  
-  "web_accessible_resources": [
-    {
-      "resources": ["inject.js"],
-      "matches": ["https://kdpreports.amazon.com/*"]
-    }
-  ]
+  }
 }
