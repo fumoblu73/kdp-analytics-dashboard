@@ -1,0 +1,494 @@
+// popup.js - KDP Analytics Extension Popup - Final Complete Version
+// Enhanced Extension Popup for Dashboard Integration
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializePopup();
+    loadSavedSettings();
+    setupEventListeners();
+    updateConnectionStatus();
+});
+
+let lastExtractedData = null;
+let syncInProgress = false;
+
+function initializePopup() {
+    addLog('info', 'Extension popup initialized');
+    showWelcomeMessage();
+    loadLastSyncData();
+}
+
+function showWelcomeMessage() {
+    const welcomeDiv = document.getElementById('welcome-message');
+    if (welcomeDiv) {
+        welcomeDiv.innerHTML = `
+            <div class="welcome-card">
+                <h3>🚀 KDP Analytics Pro</h3>
+                <p>Real-time Amazon KDP performance tracking</p>
+                <div class="quick-stats">
+                    <div class="stat">
+                        <span class="stat-label">Status:</span>
+                        <span id="connection-status" class="stat-value">Checking...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function loadLastSyncData() {
+    chrome.storage.local.get(['kdp_dashboard_data'], (result) => {
+        if (result.kdp_dashboard_data) {
+            lastExtractedData = result.kdp_dashboard_data;
+            updateSyncStatus(lastExtractedData);
+            displayDataSummary(lastExtractedData);
+        } else {
+            updateSyncStatus(null);
+        }
+    });
+}
+
+function updateSyncStatus(data) {
+    const statusElement = document.getElementById('sync-status');
+    const lastSyncElement = document.getElementById('last-sync-time');
+    
+    if (data && data.timestamp) {
+        const lastSync = new Date(data.timestamp);
+        const timeDiff = Date.now() - lastSync.getTime();
+        const minutesAgo = Math.floor(timeDiff / (1000 * 60));
+        
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div class="status-success">
+                    ✅ Last sync: ${minutesAgo < 1 ? 'Just now' : `${minutesAgo} minutes ago`}
+                </div>
+            `;
+        }
+        
+        if (lastSyncElement) {
+            lastSyncElement.textContent = lastSync.toLocaleString();
+        }
+    } else {
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div class="status-warning">
+                    ⚠️ No data synced yet
+                </div>
+            `;
+        }
+    }
+}
+
+function displayDataSummary(data) {
+    const summaryElement = document.getElementById('data-summary');
+    if (!summaryElement || !data) return;
+    
+    const books = data.books || [];
+    const totalRevenue = data.totalRevenue || 0;
+    const totalBooks = books.length;
+    const totalSales = books.reduce((sum, book) => sum + (book.totalSales || 0), 0);
+    const totalKenpReads = books.reduce((sum, book) => sum + (book.kenpReads || 0), 0);
+    
+    summaryElement.innerHTML = `
+        <div class="data-summary-card">
+            <h4>📊 Current Data Summary</h4>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Books Found:</span>
+                    <span class="summary-value">${totalBooks}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Revenue:</span>
+                    <span class="summary-value">$${totalRevenue.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Sales:</span>
+                    <span class="summary-value">${totalSales.toLocaleString()}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">KENP Reads:</span>
+                    <span class="summary-value">${totalKenpReads.toLocaleString()}</span>
+                </div>
+            </div>
+            ${totalBooks > 0 ? `
+                <div class="top-books">
+                    <h5>🏆 Top Books:</h5>
+                    ${books.slice(0, 3).map((book, index) => `
+                        <div class="top-book-item">
+                            <span class="book-rank">#${index + 1}</span>
+                            <span class="book-title">${book.title.substring(0, 30)}${book.title.length > 30 ? '...' : ''}</span>
+                            <span class="book-revenue">$${(book.totalRoyalties || 0).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function updateConnectionStatus() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+            const currentTab = tabs[0];
+            const url = currentTab.url.toLowerCase();
+            const statusElement = document.getElementById('connection-status');
+            
+            if (url.includes('kdpreports.amazon.com') || url.includes('kdp.amazon.com')) {
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="status-connected">🟢 Connected to KDP</span>';
+                }
+                checkContentScriptStatus(currentTab.id);
+            } else {
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="status-disconnected">🔴 Not on KDP page</span>';
+                }
+                showNavigationHelper();
+            }
+        }
+    });
+}
+
+function checkContentScriptStatus(tabId) {
+    chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
+        const statusElement = document.getElementById('connection-status');
+        if (chrome.runtime.lastError || !response) {
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-warning">⚠️ Script not loaded</span>';
+            }
+            addLog('warning', 'Content script not responding. Try refreshing the KDP page.');
+        } else {
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-connected">✅ Ready to sync</span>';
+            }
+            addLog('success', 'Content script active and ready');
+        }
+    });
+}
+
+function showNavigationHelper() {
+    const helperElement = document.getElementById('navigation-helper');
+    if (helperElement) {
+        helperElement.innerHTML = `
+            <div class="navigation-card">
+                <h4>📍 Navigate to KDP</h4>
+                <p>To sync your data, please visit:</p>
+                <div class="url-buttons">
+                    <button class="url-button" onclick="openKDPReports()">
+                        📊 KDP Reports
+                    </button>
+                    <button class="url-button" onclick="openKDPBookshelf()">
+                        📚 KDP Bookshelf
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function setupEventListeners() {
+    // Force Sync Button
+    const forceSyncBtn = document.getElementById('force-sync-btn');
+    if (forceSyncBtn) {
+        forceSyncBtn.addEventListener('click', performForceSync);
+    }
+    
+    // Open Dashboard Button
+    const openDashboardBtn = document.getElementById('open-dashboard-btn');
+    if (openDashboardBtn) {
+        openDashboardBtn.addEventListener('click', openDashboard);
+    }
+    
+    // Test Extraction Button
+    const testExtractionBtn = document.getElementById('test-extraction-btn');
+    if (testExtractionBtn) {
+        testExtractionBtn.addEventListener('click', performTestExtraction);
+    }
+    
+    // Clear Data Button
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    if (clearDataBtn) {
+        clearDataBtn.addEventListener('click', clearStoredData);
+    }
+    
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        if (!syncInProgress) {
+            loadLastSyncData();
+            updateConnectionStatus();
+        }
+    }, 30000);
+}
+
+async function performForceSync() {
+    if (syncInProgress) {
+        addLog('warning', 'Sync already in progress...');
+        return;
+    }
+    
+    syncInProgress = true;
+    updateSyncButton(true);
+    addLog('info', 'Starting force sync...');
+    
+    try {
+        const tabs = await new Promise(resolve => {
+            chrome.tabs.query({ active: true, currentWindow: true }, resolve);
+        });
+        
+        if (!tabs[0]) {
+            throw new Error('No active tab found');
+        }
+        
+        const currentTab = tabs[0];
+        const url = currentTab.url.toLowerCase();
+        
+        if (!url.includes('kdp')) {
+            throw new Error('Please navigate to a KDP page first');
+        }
+        
+        addLog('info', `Starting extraction on: ${currentTab.url}`);
+        
+        // Send extraction request to content script
+        const response = await new Promise((resolve) => {
+            chrome.tabs.sendMessage(currentTab.id, { action: 'forceSync' }, resolve);
+        });
+        
+        if (chrome.runtime.lastError) {
+            throw new Error('Content script not responding. Try refreshing the page.');
+        }
+        
+        if (response && response.success) {
+            addLog('success', `Sync completed! Found ${response.data?.books?.length || 0} books`);
+            
+            // Save data to storage
+            await saveDataToStorage(response.data);
+            
+            // Update UI
+            lastExtractedData = response.data;
+            updateSyncStatus(response.data);
+            displayDataSummary(response.data);
+            
+            // Auto-open dashboard after successful sync
+            setTimeout(() => {
+                openDashboard();
+            }, 1000);
+            
+        } else {
+            const errorMsg = response?.message || 'Extraction failed';
+            throw new Error(errorMsg);
+        }
+        
+    } catch (error) {
+        addLog('error', `Sync failed: ${error.message}`);
+        console.error('Force sync error:', error);
+    } finally {
+        syncInProgress = false;
+        updateSyncButton(false);
+    }
+}
+
+async function performTestExtraction() {
+    addLog('info', 'Running test extraction...');
+    
+    try {
+        const tabs = await new Promise(resolve => {
+            chrome.tabs.query({ active: true, currentWindow: true }, resolve);
+        });
+        
+        if (!tabs[0]) {
+            throw new Error('No active tab found');
+        }
+        
+        const response = await new Promise((resolve) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'extractData' }, resolve);
+        });
+        
+        if (response && response.success) {
+            addLog('success', `Test completed! Found ${response.data?.books?.length || 0} books`);
+            displayTestResults(response.data);
+        } else {
+            addLog('error', `Test failed: ${response?.message || 'Unknown error'}`);
+        }
+        
+    } catch (error) {
+        addLog('error', `Test failed: ${error.message}`);
+    }
+}
+
+function displayTestResults(data) {
+    const testResultsElement = document.getElementById('test-results');
+    if (!testResultsElement || !data) return;
+    
+    const books = data.books || [];
+    
+    testResultsElement.innerHTML = `
+        <div class="test-results-card">
+            <h4>🧪 Test Results</h4>
+            <p><strong>Books found:</strong> ${books.length}</p>
+            <p><strong>Total revenue:</strong> $${(data.totalRevenue || 0).toFixed(2)}</p>
+            ${books.length > 0 ? `
+                <div class="found-books">
+                    <h5>Found books:</h5>
+                    ${books.slice(0, 5).map(book => `
+                        <div class="found-book">
+                            • ${book.title} - $${(book.totalRoyalties || 0).toFixed(2)}
+                        </div>
+                    `).join('')}
+                    ${books.length > 5 ? `<div class="more-books">...and ${books.length - 5} more</div>` : ''}
+                </div>
+            ` : '<p>No books found in current page.</p>'}
+        </div>
+    `;
+}
+
+function updateSyncButton(isLoading) {
+    const syncBtn = document.getElementById('force-sync-btn');
+    if (syncBtn) {
+        if (isLoading) {
+            syncBtn.innerHTML = '🔄 Syncing...';
+            syncBtn.disabled = true;
+            syncBtn.classList.add('loading');
+        } else {
+            syncBtn.innerHTML = '🚀 Force Sync';
+            syncBtn.disabled = false;
+            syncBtn.classList.remove('loading');
+        }
+    }
+}
+
+function openDashboard() {
+    chrome.tabs.create({
+        url: 'https://kdp-analytics-dashboard.vercel.app',
+        active: true
+    });
+    addLog('info', 'Opening KDP Analytics Dashboard...');
+}
+
+function openKDPReports() {
+    chrome.tabs.create({
+        url: 'https://kdpreports.amazon.com/dashboard',
+        active: true
+    });
+}
+
+function openKDPBookshelf() {
+    chrome.tabs.create({
+        url: 'https://kdp.amazon.com/en_US/bookshelf',
+        active: true
+    });
+}
+
+async function saveDataToStorage(data) {
+    return new Promise((resolve) => {
+        const storageData = {
+            kdp_dashboard_data: {
+                ...data,
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        chrome.storage.local.set(storageData, () => {
+            addLog('success', 'Data saved to extension storage');
+            resolve();
+        });
+    });
+}
+
+function clearStoredData() {
+    chrome.storage.local.remove(['kdp_dashboard_data'], () => {
+        addLog('info', 'Stored data cleared');
+        lastExtractedData = null;
+        updateSyncStatus(null);
+        displayDataSummary(null);
+        
+        const summaryElement = document.getElementById('data-summary');
+        if (summaryElement) {
+            summaryElement.innerHTML = '<div class="no-data">No data available. Sync your KDP account to get started.</div>';
+        }
+    });
+}
+
+function loadSavedSettings() {
+    chrome.storage.sync.get(['autoSync', 'syncInterval'], (result) => {
+        // Load any saved settings
+        console.log('Saved settings:', result);
+    });
+}
+
+function addLog(type, message) {
+    const logContainer = document.getElementById('activity-log');
+    if (!logContainer) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry log-${type}`;
+    
+    const icon = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌'
+    }[type] || 'ℹ️';
+    
+    logEntry.innerHTML = `
+        <span class="log-time">${timestamp}</span>
+        <span class="log-icon">${icon}</span>
+        <span class="log-message">${message}</span>
+    `;
+    
+    logContainer.insertBefore(logEntry, logContainer.firstChild);
+    
+    // Keep only last 10 entries
+    while (logContainer.children.length > 10) {
+        logContainer.removeChild(logContainer.lastChild);
+    }
+}
+
+// Listen for messages from content script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'saveData') {
+        saveDataToStorage(request.data).then(() => {
+            lastExtractedData = request.data;
+            updateSyncStatus(request.data);
+            displayDataSummary(request.data);
+            addLog('success', `Auto-sync completed: ${request.data.books?.length || 0} books`);
+        });
+    }
+    
+    if (request.action === 'getData') {
+        sendResponse({
+            success: true,
+            data: lastExtractedData
+        });
+    }
+    
+    if (request.action === 'ping') {
+        sendResponse({ status: 'popup_active' });
+    }
+});
+
+// Background script communication
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log('Popup received message:', request);
+    
+    switch (request.action) {
+        case 'updateData':
+            if (request.data) {
+                lastExtractedData = request.data;
+                updateSyncStatus(request.data);
+                displayDataSummary(request.data);
+            }
+            break;
+            
+        case 'syncStatus':
+            if (request.status === 'completed') {
+                addLog('success', 'Background sync completed');
+                loadLastSyncData();
+            } else if (request.status === 'failed') {
+                addLog('error', 'Background sync failed');
+            }
+            break;
+    }
+});
+
+// Make functions globally available for onclick handlers
+window.openKDPReports = openKDPReports;
+window.openKDPBookshelf = openKDPBookshelf;

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDP Analytics Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 400px;
+            min-height: 500px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .container {
+            padding: 0;
+            background: white;
+            min-height: 500px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .welcome-card, .data-summary-card, .navigation-card, .test-results-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .welcome-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .welcome-card p {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .quick-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .stat-value {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-connected {
+            color: #059669;
+        }
+
+        .status-disconnected {
+            color: #dc2626;
+        }
+
+        .status-warning {
+            color: #d97706;
+        }
+
+        .status-success {
+            color: #059669;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: #ecfdf5;
+            border-radius: 6px;
+            border: 1px solid #a7f3d0;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .summary-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .top-books {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+
+        .top-books h5 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .top-book-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 11px;
+        }
+
+        .book-rank {
+            background: #3b82f6;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-weight: 600;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .book-title {
+            flex: 1;
+            color: #374151;
+        }
+
+        .book-revenue {
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .buttons-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn.loading {
+            position: relative;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            width: 12px;
+            height: 12px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .url-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .url-button {
+            padding: 8px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .url-button:hover {
+            background: #2563eb;
+        }
+
+        .activity-section {
+            margin-top: 20px;
+        }
+
+        .activity-section h4 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .activity-log {
+            max-height: 120px;
+            overflow-y: auto;
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 11px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #64748b;
+            min-width: 60px;
+            font-family: monospace;
+        }
+
+        .log-icon {
+            min-width: 16px;
+        }
+
+        .log-message {
+            flex: 1;
+            color: #374151;
+        }
+
+        .log-success {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .log-error {
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .log-warning {
+            background: rgba(217, 119, 6, 0.05);
+        }
+
+        .navigation-card h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .navigation-card p {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .test-results-card h4 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        .found-books {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .found-books h5 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .found-book {
+            font-size: 11px;
+            color: #64748b;
+            padding: 2px 0;
+        }
+
+        .more-books {
+            font-size: 11px;
+            color: #6b7280;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 16px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .footer-link {
+            font-size: 11px;
+            color: #6b7280;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .footer-link:hover {
+            color: #3b82f6;
+        }
+
+        .version {
+            font-size: 10px;
+            color: #9ca3af;
+        }
+
+        /* Scrollbar styling */
+        .activity-log::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .activity-log::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .activity-log::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        .activity-log::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 KDP Analytics Pro</h1>
+            <p>Real-time Amazon KDP Performance Tracking</p>
+        </div>
+
+        <div class="content">
+            <!-- Welcome Message -->
+            <div id="welcome-message"></div>
+
+            <!-- Sync Status -->
+            <div id="sync-status"></div>
+
+            <!-- Data Summary -->
+            <div id="data-summary">
+                <div class="no-data">
+                    No data available. Sync your KDP account to get started.
+                </div>
+            </div>
+
+            <!-- Navigation Helper -->
+            <div id="navigation-helper"></div>
+
+            <!-- Test Results -->
+            <div id="test-results"></div>
+
+            <!-- Action Buttons -->
+            <div class="buttons-section">
+                <button id="force-sync-btn" class="btn btn-primary">
+                    🚀 Force Sync
+                </button>
+                
+                <button id="open-dashboard-btn" class="btn btn-success">
+                    📊 Open Dashboard
+                </button>
+                
+                <div style="display: flex; gap: 8px;">
+                    <button id="test-extraction-btn" class="btn btn-secondary" style="flex: 1;">
+                        🧪 Test Extraction
+                    </button>
+                    
+                    <button id="clear-data-btn" class="btn btn-secondary" style="flex: 1;">
+                        🗑️ Clear Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="activity-section">
+                <h4>📝 Activity Log</h4>
+                <div id="activity-log" class="activity-log">
+                    <!-- Log entries will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <a href="#" class="footer-link" onclick="openDashboard()">Dashboard</a>
+                <a href="#" class="footer-link" onclick="openKDPReports()">KDP Reports</a>
+                <a href="#" class="footer-link" onclick="openKDPBookshelf()">Bookshelf</a>
+            </div>
+            <div class="version">v2.0.0 - Enhanced Integration</div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
