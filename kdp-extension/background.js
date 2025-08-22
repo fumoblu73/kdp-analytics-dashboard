@@ -1,351 +1,818 @@
-// background.js - Continuous auto-sync without needing KDP pages open
+// background.js - Advanced Background Sync & Management for KDP Analytics Pro
+console.log('🚀 KDP Analytics Pro: Enhanced background service initialized');
 
-let autoSyncInterval = null;
-let isAutoSyncEnabled = false;
-let kdpCredentials = null;
+// Configuration
+const CONFIG = {
+    DASHBOARD_URL: 'https://kdp-analytics-dashboard.vercel.app',
+    SYNC_INTERVALS: {
+        FAST: 5 * 60 * 1000,     // 5 minutes
+        NORMAL: 15 * 60 * 1000,  // 15 minutes
+        SLOW: 60 * 60 * 1000     // 1 hour
+    },
+    MAX_RETRY_ATTEMPTS: 3,
+    STORAGE_KEYS: {
+        USER_DATA: 'kdp_user_data',
+        BOOKS_DATA: 'kdp_books_data',
+        ADS_DATA: 'kdp_ads_data',
+        SYNC_LOG: 'kdp_sync_log',
+        SETTINGS: 'kdp_settings'
+    },
+    KDP_URLS: [
+        '*://kdpreports.amazon.com/*',
+        '*://kdp.amazon.com/*',
+        '*://advertising.amazon.com/*'
+    ]
+};
 
-// Initialize extension
-chrome.runtime.onInstalled.addListener(() => {
-    console.log('KDP Analytics Extension installed - Background sync enabled');
+// Global state
+let backgroundState = {
+    isAutoSyncEnabled: true,
+    currentSyncInterval: CONFIG.SYNC_INTERVALS.NORMAL,
+    lastSyncTime: null,
+    syncInProgress: false,
+    retryCount: 0,
+    activeIntervals: new Map(),
+    openKDPTabs: new Set(),
+    userData: null,
+    syncLog: []
+};
+
+// Initialize background service
+chrome.runtime.onInstalled.addListener(async (details) => {
+    console.log('📦 Extension installed/updated:', details.reason);
     
-    // Set default settings
-    chrome.storage.sync.set({
-        dashboardUrl: 'https://kdp-analytics-dashboard.vercel.app',
-        autoSyncEnabled: true, // Enable by default
-        rememberCredentials: false,
-        syncInterval: 10 // minutes
-    });
+    await initializeBackgroundService();
     
-    // Start auto-sync immediately
-    startContinuousSync();
+    if (details.reason === 'install') {
+        await setupDefaultSettings();
+        await showWelcomeNotification();
+    } else if (details.reason === 'update') {
+        await migrateData();
+    }
 });
 
-// Start on browser startup
-chrome.runtime.onStartup.addListener(() => {
-    console.log('Browser started - Resuming auto-sync');
-    loadSettingsAndStartSync();
+// Browser startup
+chrome.runtime.onStartup.addListener(async () => {
+    console.log('🌅 Browser started - Resuming KDP Analytics Pro...');
+    await initializeBackgroundService();
 });
 
-// Load settings and start sync
-async function loadSettingsAndStartSync() {
-    const settings = await chrome.storage.sync.get(['autoSyncEnabled', 'syncInterval']);
-    if (settings.autoSyncEnabled !== false) {
-        startContinuousSync();
+// Initialize background service
+async function initializeBackgroundService() {
+    try {
+        // Load persisted data
+        await loadPersistedData();
+        
+        // Start monitoring KDP tabs
+        startTabMonitoring();
+        
+        // Start auto-sync if enabled
+        if (backgroundState.isAutoSyncEnabled) {
+            startAutoSync();
+        }
+        
+        // Setup alarm for periodic sync
+        setupPeriodicAlarms();
+        
+        console.log('✅ Background service initialized successfully');
+        
+    } catch (error) {
+        console.error('❌ Background service initialization failed:', error);
+        logSyncActivity('ERROR', 'Background service initialization failed', error);
     }
 }
 
-// Listen for messages from popup and content scripts
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('Background received message:', request.type || request.action);
-    
+// Load persisted data from storage
+async function loadPersistedData() {
     try {
-        if (request.action === 'toggleAutoSync') {
-            toggleContinuousSync(request.enabled);
-            sendResponse({ status: 'auto_sync_toggled', enabled: request.enabled });
-            return true;
-        }
+        const result = await chrome.storage.local.get([
+            CONFIG.STORAGE_KEYS.USER_DATA,
+            CONFIG.STORAGE_KEYS.BOOKS_DATA,
+            CONFIG.STORAGE_KEYS.ADS_DATA,
+            CONFIG.STORAGE_KEYS.SYNC_LOG,
+            CONFIG.STORAGE_KEYS.SETTINGS
+        ]);
         
-        if (request.action === 'setSyncInterval') {
-            setSyncInterval(request.interval);
-            sendResponse({ status: 'interval_updated', interval: request.interval });
-            return true;
-        }
+        backgroundState.userData = result[CONFIG.STORAGE_KEYS.USER_DATA] || null;
+        backgroundState.syncLog = result[CONFIG.STORAGE_KEYS.SYNC_LOG] || [];
         
-        if (request.action === 'saveKDPCredentials') {
-            saveKDPCredentials(request.credentials);
-            sendResponse({ status: 'credentials_saved' });
-            return true;
-        }
+        const settings = result[CONFIG.STORAGE_KEYS.SETTINGS] || {};
+        backgroundState.isAutoSyncEnabled = settings.autoSyncEnabled !== false;
+        backgroundState.currentSyncInterval = settings.syncInterval || CONFIG.SYNC_INTERVALS.NORMAL;
         
-        if (request.action === 'forceSyncNow') {
-            performBackgroundSync();
-            sendResponse({ status: 'sync_started' });
-            return true;
-        }
-        
-        // Handle data messages from content scripts
-        if (request.type === 'KDP_DATA_EXTRACTED') {
-            console.log('KDP data received, sending to dashboard');
-            sendDataToDashboard(request.data);
-            return true;
-        }
+        console.log('📊 Loaded persisted data:', {
+            hasUserData: !!backgroundState.userData,
+            syncLogEntries: backgroundState.syncLog.length,
+            autoSyncEnabled: backgroundState.isAutoSyncEnabled
+        });
         
     } catch (error) {
-        console.error('Background message handling error:', error);
-        sendResponse({ status: 'error', error: error.message });
+        console.error('Error loading persisted data:', error);
     }
-    
-    return true;
-});
+}
 
-function toggleContinuousSync(enabled) {
-    isAutoSyncEnabled = enabled;
-    chrome.storage.sync.set({ autoSyncEnabled: enabled });
+// Setup default settings
+async function setupDefaultSettings() {
+    const defaultSettings = {
+        autoSyncEnabled: true,
+        syncInterval: CONFIG.SYNC_INTERVALS.NORMAL,
+        notificationsEnabled: true,
+        dataRetentionDays: 365,
+        syncOnlyWhenActive: false,
+        enableDetailedLogging: true
+    };
     
-    if (enabled) {
-        startContinuousSync();
-        console.log('Continuous auto-sync enabled');
+    await chrome.storage.sync.set({
+        [CONFIG.STORAGE_KEYS.SETTINGS]: defaultSettings
+    });
+    
+    console.log('⚙️ Default settings configured');
+}
+
+// Show welcome notification
+async function showWelcomeNotification() {
+    chrome.notifications.create('welcome', {
+        type: 'basic',
+        iconUrl: 'icons/icon48.png',
+        title: 'KDP Analytics Pro',
+        message: 'Extension installed! Visit KDP Reports to start syncing your data.'
+    });
+}
+
+// Migrate data on update
+async function migrateData() {
+    // Handle data migration between versions
+    console.log('🔄 Migrating data to new version...');
+    // Implementation would depend on specific migration needs
+}
+
+// Tab monitoring for KDP pages
+function startTabMonitoring() {
+    // Listen for tab updates
+    chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+        if (changeInfo.status === 'complete' && tab.url) {
+            await handleTabUpdate(tabId, tab);
+        }
+    });
+    
+    // Listen for tab removal
+    chrome.tabs.onRemoved.addListener((tabId) => {
+        backgroundState.openKDPTabs.delete(tabId);
+    });
+    
+    // Initial scan for existing KDP tabs
+    scanExistingTabs();
+}
+
+// Handle tab updates
+async function handleTabUpdate(tabId, tab) {
+    const isKDPPage = CONFIG.KDP_URLS.some(pattern => 
+        tab.url.match(pattern.replace('*://', 'https?://').replace('/*', '/.*'))
+    );
+    
+    if (isKDPPage) {
+        backgroundState.openKDPTabs.add(tabId);
+        console.log(`📋 KDP tab detected: ${tabId} - ${tab.url}`);
+        
+        // Inject content script if needed
+        await injectContentScriptIfNeeded(tabId);
+        
+        // Trigger sync if auto-sync is enabled
+        if (backgroundState.isAutoSyncEnabled && !backgroundState.syncInProgress) {
+            setTimeout(() => {
+                triggerTabSync(tabId);
+            }, 3000); // Wait for page to load
+        }
+        
+        logSyncActivity('TAB_DETECTED', `KDP page opened: ${tab.url}`);
     } else {
-        stopContinuousSync();
-        console.log('Continuous auto-sync disabled');
+        backgroundState.openKDPTabs.delete(tabId);
     }
 }
 
-function startContinuousSync() {
-    // Clear existing interval
-    if (autoSyncInterval) {
-        clearInterval(autoSyncInterval);
-    }
-    
-    isAutoSyncEnabled = true;
-    
-    // Get sync interval from settings (default 10 minutes)
-    chrome.storage.sync.get(['syncInterval'], (result) => {
-        const intervalMinutes = result.syncInterval || 10;
-        const intervalMs = intervalMinutes * 60 * 1000;
-        
-        // Set interval for continuous sync
-        autoSyncInterval = setInterval(() => {
-            performBackgroundSync();
-        }, intervalMs);
-        
-        console.log(`Continuous sync started: every ${intervalMinutes} minutes`);
-        
-        // Perform initial sync after 30 seconds
-        setTimeout(() => {
-            performBackgroundSync();
-        }, 30000);
-    });
-}
-
-function stopContinuousSync() {
-    if (autoSyncInterval) {
-        clearInterval(autoSyncInterval);
-        autoSyncInterval = null;
-    }
-    isAutoSyncEnabled = false;
-}
-
-function setSyncInterval(minutes) {
-    chrome.storage.sync.set({ syncInterval: minutes });
-    
-    if (isAutoSyncEnabled) {
-        // Restart with new interval
-        startContinuousSync();
-    }
-}
-
-function saveKDPCredentials(credentials) {
-    kdpCredentials = credentials;
-    chrome.storage.local.set({ kdpCredentials: credentials });
-}
-
-async function performBackgroundSync() {
-    if (!isAutoSyncEnabled) return;
-    
-    console.log('Performing background sync...');
-    
+// Scan existing tabs
+async function scanExistingTabs() {
     try {
-        // Get dashboard settings
-        const settings = await chrome.storage.sync.get(['dashboardUrl', 'dashboardEmail']);
+        const tabs = await chrome.tabs.query({});
         
-        // Method 1: Try to sync from open KDP tabs
-        const kdpSynced = await syncFromOpenKDPTabs();
-        
-        // Method 2: If no open KDP tabs, use stored credentials to fetch data
-        if (!kdpSynced) {
-            await syncUsingStoredCredentials();
-        }
-        
-        // Method 3: Fetch Amazon Ads data using API (when available)
-        await syncAmazonAdsData();
-        
-        console.log('Background sync completed');
-        
-    } catch (error) {
-        console.error('Background sync error:', error);
-    }
-}
-
-async function syncFromOpenKDPTabs() {
-    try {
-        // Check for open KDP tabs
-        const kdpTabs = await chrome.tabs.query({
-            url: ["*://kdpreports.amazon.com/*", "*://kdp.amazon.com/*"]
-        });
-        
-        if (kdpTabs.length > 0) {
-            console.log(`Found ${kdpTabs.length} open KDP tabs`);
+        for (const tab of tabs) {
+            const isKDPPage = CONFIG.KDP_URLS.some(pattern => 
+                tab.url?.match(pattern.replace('*://', 'https?://').replace('/*', '/.*'))
+            );
             
-            for (const tab of kdpTabs) {
-                try {
-                    await chrome.tabs.sendMessage(tab.id, { action: 'extractData' });
-                    console.log('Sync request sent to KDP tab:', tab.id);
-                    return true; // Successfully synced from open tab
-                } catch (error) {
-                    console.log('Tab sync error (tab may be inactive):', error.message);
-                }
+            if (isKDPPage) {
+                backgroundState.openKDPTabs.add(tab.id);
+                await injectContentScriptIfNeeded(tab.id);
             }
         }
         
-        return false; // No successful sync from tabs
+        console.log(`🔍 Found ${backgroundState.openKDPTabs.size} existing KDP tabs`);
         
     } catch (error) {
-        console.log('Error checking KDP tabs:', error);
-        return false;
+        console.error('Error scanning existing tabs:', error);
     }
 }
 
-async function syncUsingStoredCredentials() {
+// Inject content script if needed
+async function injectContentScriptIfNeeded(tabId) {
     try {
-        // Get stored KDP credentials
-        const result = await chrome.storage.local.get(['kdpCredentials']);
-        
-        if (!result.kdpCredentials) {
-            console.log('No stored KDP credentials for background sync');
-            return;
+        // Check if content script is already injected
+        const response = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+        if (response?.status === 'active') {
+            return; // Already injected
         }
-        
-        console.log('Attempting sync using stored credentials...');
-        
-        // Create invisible tab to KDP Reports
-        const tab = await chrome.tabs.create({
-            url: 'https://kdpreports.amazon.com/dashboard',
-            active: false // Open in background
-        });
-        
-        // Wait for tab to load and inject credentials
-        setTimeout(async () => {
-            try {
-                // Inject login script if needed
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    func: injectKDPLogin,
-                    args: [result.kdpCredentials]
-                });
-                
-                // Wait for login and then extract data
-                setTimeout(async () => {
-                    try {
-                        await chrome.tabs.sendMessage(tab.id, { action: 'extractData' });
-                        
-                        // Close the background tab after sync
-                        setTimeout(() => {
-                            chrome.tabs.remove(tab.id);
-                        }, 5000);
-                        
-                    } catch (error) {
-                        console.log('Background sync extraction error:', error);
-                        chrome.tabs.remove(tab.id);
-                    }
-                }, 10000);
-                
-            } catch (error) {
-                console.log('Background login injection error:', error);
-                chrome.tabs.remove(tab.id);
-            }
-        }, 5000);
-        
     } catch (error) {
-        console.log('Stored credentials sync error:', error);
+        // Content script not injected, inject it
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                files: ['content.js']
+            });
+            console.log(`✅ Content script injected into tab ${tabId}`);
+        } catch (injectionError) {
+            console.error(`❌ Failed to inject content script into tab ${tabId}:`, injectionError);
+        }
     }
 }
 
-// Function to inject login (runs in page context)
-function injectKDPLogin(credentials) {
-    // This function runs in the page context
-    console.log('Attempting background login...');
+// Auto-sync management
+function startAutoSync() {
+    // Clear existing intervals
+    stopAutoSync();
     
-    // Check if already logged in
-    if (document.querySelector('[data-testid*="royalty"], .royalty, .dashboard')) {
-        console.log('Already logged in to KDP');
+    const intervalId = setInterval(async () => {
+        if (!backgroundState.syncInProgress) {
+            await performScheduledSync();
+        }
+    }, backgroundState.currentSyncInterval);
+    
+    backgroundState.activeIntervals.set('autoSync', intervalId);
+    
+    console.log(`🔄 Auto-sync started: every ${backgroundState.currentSyncInterval / 1000 / 60} minutes`);
+}
+
+function stopAutoSync() {
+    for (const [name, intervalId] of backgroundState.activeIntervals) {
+        clearInterval(intervalId);
+    }
+    backgroundState.activeIntervals.clear();
+    console.log('⏹️ Auto-sync stopped');
+}
+
+// Perform scheduled sync
+async function performScheduledSync() {
+    if (backgroundState.syncInProgress) {
+        console.log('⏳ Sync already in progress, skipping scheduled sync');
         return;
     }
     
-    // Try to fill login form if present
+    backgroundState.syncInProgress = true;
+    logSyncActivity('SCHEDULED_SYNC', 'Starting scheduled sync');
+    
+    try {
+        const results = {
+            successfulTabs: 0,
+            failedTabs: 0,
+            totalData: { books: [], ads: [] }
+        };
+        
+        // Sync from open KDP tabs
+        if (backgroundState.openKDPTabs.size > 0) {
+            for (const tabId of backgroundState.openKDPTabs) {
+                try {
+                    const syncResult = await triggerTabSync(tabId);
+                    if (syncResult?.success) {
+                        results.successfulTabs++;
+                        if (syncResult.data?.books) {
+                            results.totalData.books.push(...syncResult.data.books);
+                        }
+                        if (syncResult.data?.ads) {
+                            results.totalData.ads.push(...syncResult.data.ads);
+                        }
+                    } else {
+                        results.failedTabs++;
+                    }
+                } catch (error) {
+                    console.error(`Tab sync failed for ${tabId}:`, error);
+                    results.failedTabs++;
+                }
+            }
+        } else {
+            // No open tabs, try background sync via API
+            await performBackgroundAPISync();
+        }
+        
+        // Save synced data
+        if (results.totalData.books.length > 0 || results.totalData.ads.length > 0) {
+            await saveExtractedData(results.totalData);
+        }
+        
+        // Update last sync time
+        backgroundState.lastSyncTime = new Date().toISOString();
+        backgroundState.retryCount = 0;
+        
+        logSyncActivity('SCHEDULED_SYNC_COMPLETE', 
+            `Sync completed: ${results.successfulTabs} successful, ${results.failedTabs} failed`);
+        
+        // Notify popup if open
+        chrome.runtime.sendMessage({
+            action: 'syncComplete',
+            results: results
+        }).catch(() => {}); // Ignore if popup not open
+        
+    } catch (error) {
+        console.error('❌ Scheduled sync failed:', error);
+        backgroundState.retryCount++;
+        
+        logSyncActivity('SCHEDULED_SYNC_ERROR', 'Scheduled sync failed', error);
+        
+        // Exponential backoff for retries
+        if (backgroundState.retryCount < CONFIG.MAX_RETRY_ATTEMPTS) {
+            setTimeout(() => {
+                performScheduledSync();
+            }, Math.pow(2, backgroundState.retryCount) * 60000); // 2^n minutes
+        }
+        
+    } finally {
+        backgroundState.syncInProgress = false;
+    }
+}
+
+// Trigger sync on specific tab
+async function triggerTabSync(tabId) {
+    try {
+        console.log(`🔄 Triggering sync on tab ${tabId}`);
+        
+        const response = await chrome.tabs.sendMessage(tabId, {
+            action: 'extractData'
+        });
+        
+        if (response?.success) {
+            console.log(`✅ Tab sync successful: ${tabId}`);
+            return response;
+        } else {
+            console.log(`❌ Tab sync failed: ${tabId} - ${response?.error || 'Unknown error'}`);
+            return { success: false, error: response?.error };
+        }
+        
+    } catch (error) {
+        console.error(`❌ Tab sync communication failed: ${tabId}`, error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Background API sync (when no tabs are open)
+async function performBackgroundAPISync() {
+    console.log('🌐 Performing background API sync...');
+    
+    if (!backgroundState.userData?.credentials) {
+        console.log('⚠️ No user credentials available for background sync');
+        return;
+    }
+    
+    try {
+        // Create invisible tab for KDP
+        const tab = await chrome.tabs.create({
+            url: 'https://kdpreports.amazon.com/dashboard',
+            active: false
+        });
+        
+        // Wait for tab to load
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Inject credentials and extract data
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: performBackgroundExtraction,
+            args: [backgroundState.userData.credentials]
+        });
+        
+        // Wait for extraction
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        
+        // Try to get data
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'extractData' });
+        
+        // Close the background tab
+        setTimeout(() => {
+            chrome.tabs.remove(tab.id);
+        }, 2000);
+        
+        if (response?.success) {
+            logSyncActivity('BACKGROUND_API_SYNC', 'Background API sync successful');
+            return response.data;
+        }
+        
+    } catch (error) {
+        console.error('Background API sync failed:', error);
+        logSyncActivity('BACKGROUND_API_SYNC_ERROR', 'Background API sync failed', error);
+    }
+}
+
+// Function to run in background tab context
+function performBackgroundExtraction(credentials) {
+    // This function runs in the page context
+    console.log('🔐 Performing background authentication...');
+    
+    // Check if already logged in
+    if (document.querySelector('[data-testid*="royalty"], .royalty, .dashboard-content')) {
+        console.log('✅ Already authenticated');
+        return;
+    }
+    
+    // Try to authenticate if needed
     const emailField = document.querySelector('input[type="email"], input[name="email"]');
     const passwordField = document.querySelector('input[type="password"], input[name="password"]');
-    const loginButton = document.querySelector('input[type="submit"], button[type="submit"]');
     
     if (emailField && passwordField && credentials.email && credentials.password) {
         emailField.value = credentials.email;
         passwordField.value = credentials.password;
         
+        const loginButton = document.querySelector('input[type="submit"], button[type="submit"]');
         if (loginButton) {
             loginButton.click();
         }
     }
 }
 
-async function syncAmazonAdsData() {
+// Setup periodic alarms
+function setupPeriodicAlarms() {
+    // Create alarm for daily cleanup
+    chrome.alarms.create('dailyCleanup', {
+        when: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
+        periodInMinutes: 24 * 60 // Every 24 hours
+    });
+    
+    // Create alarm for weekly backup
+    chrome.alarms.create('weeklyBackup', {
+        when: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days from now
+        periodInMinutes: 7 * 24 * 60 // Every 7 days
+    });
+}
+
+// Handle alarms
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    console.log('⏰ Alarm triggered:', alarm.name);
+    
+    switch (alarm.name) {
+        case 'dailyCleanup':
+            await performDailyCleanup();
+            break;
+        case 'weeklyBackup':
+            await performWeeklyBackup();
+            break;
+    }
+});
+
+// Daily cleanup tasks
+async function performDailyCleanup() {
+    console.log('🧹 Performing daily cleanup...');
+    
     try {
-        // Check for Amazon Ads API credentials
-        const result = await chrome.storage.sync.get(['amazonAdsToken']);
+        // Clean old sync logs (keep last 1000 entries)
+        if (backgroundState.syncLog.length > 1000) {
+            backgroundState.syncLog = backgroundState.syncLog.slice(-1000);
+            await chrome.storage.local.set({
+                [CONFIG.STORAGE_KEYS.SYNC_LOG]: backgroundState.syncLog
+            });
+        }
         
-        if (result.amazonAdsToken) {
-            console.log('Syncing Amazon Ads data via API...');
+        // Clean old stored data based on retention settings
+        const settings = await chrome.storage.sync.get(CONFIG.STORAGE_KEYS.SETTINGS);
+        const retentionDays = settings[CONFIG.STORAGE_KEYS.SETTINGS]?.dataRetentionDays || 365;
+        const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
+        
+        // Clean old books data
+        const booksData = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.BOOKS_DATA);
+        if (booksData[CONFIG.STORAGE_KEYS.BOOKS_DATA]) {
+            const cleanedBooks = booksData[CONFIG.STORAGE_KEYS.BOOKS_DATA].filter(book => 
+                new Date(book.lastUpdated || book.extractedAt) > cutoffDate
+            );
             
-            // Make API call to Amazon Ads
-            const response = await fetch('https://advertising-api.amazon.com/v2/reports', {
-                headers: {
-                    'Authorization': `Bearer ${result.amazonAdsToken}`,
-                    'Content-Type': 'application/json'
+            await chrome.storage.local.set({
+                [CONFIG.STORAGE_KEYS.BOOKS_DATA]: cleanedBooks
+            });
+        }
+        
+        logSyncActivity('DAILY_CLEANUP', 'Daily cleanup completed');
+        
+    } catch (error) {
+        console.error('Daily cleanup failed:', error);
+        logSyncActivity('DAILY_CLEANUP_ERROR', 'Daily cleanup failed', error);
+    }
+}
+
+// Weekly backup
+async function performWeeklyBackup() {
+    console.log('💾 Performing weekly backup...');
+    
+    try {
+        const allData = await chrome.storage.local.get();
+        
+        // Create backup object
+        const backup = {
+            timestamp: new Date().toISOString(),
+            version: chrome.runtime.getManifest().version,
+            data: allData
+        };
+        
+        // Save backup (you could extend this to save to external storage)
+        await chrome.storage.local.set({
+            [`backup_${Date.now()}`]: backup
+        });
+        
+        logSyncActivity('WEEKLY_BACKUP', 'Weekly backup completed');
+        
+    } catch (error) {
+        console.error('Weekly backup failed:', error);
+        logSyncActivity('WEEKLY_BACKUP_ERROR', 'Weekly backup failed', error);
+    }
+}
+
+// Message handling
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log('📩 Background received message:', request.action);
+    
+    switch (request.action) {
+        case 'getStatus':
+            sendResponse({
+                success: true,
+                status: {
+                    autoSyncEnabled: backgroundState.isAutoSyncEnabled,
+                    syncInProgress: backgroundState.syncInProgress,
+                    lastSyncTime: backgroundState.lastSyncTime,
+                    openKDPTabs: backgroundState.openKDPTabs.size,
+                    retryCount: backgroundState.retryCount
                 }
             });
+            break;
             
-            if (response.ok) {
-                const adsData = await response.json();
-                console.log('Amazon Ads data synced successfully');
-                
-                // Send to dashboard
-                sendDataToDashboard({
-                    type: 'amazon_ads',
-                    data: adsData,
-                    extractedAt: new Date().toISOString()
+        case 'toggleAutoSync':
+            toggleAutoSync(request.enabled);
+            sendResponse({ success: true, enabled: backgroundState.isAutoSyncEnabled });
+            break;
+            
+        case 'setSyncInterval':
+            setSyncInterval(request.interval);
+            sendResponse({ success: true, interval: backgroundState.currentSyncInterval });
+            break;
+            
+        case 'forceSyncNow':
+            performScheduledSync().then(() => {
+                sendResponse({ success: true });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+            return true; // Keep message channel open
+            
+        case 'saveData':
+            saveExtractedData(request.data).then(() => {
+                sendResponse({ success: true });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+            return true;
+            
+        case 'dataSync':
+            // Handle data sync from content script
+            if (request.success && request.data) {
+                saveExtractedData(request.data);
+                logSyncActivity('CONTENT_SYNC', 'Data received from content script');
+            }
+            sendResponse({ success: true });
+            break;
+            
+        case 'getSyncLog':
+            sendResponse({
+                success: true,
+                logs: backgroundState.syncLog.slice(0, request.limit || 50)
+            });
+            break;
+            
+        default:
+            sendResponse({ success: false, error: 'Unknown action' });
+    }
+});
+
+// Auto-sync controls
+function toggleAutoSync(enabled) {
+    backgroundState.isAutoSyncEnabled = enabled;
+    
+    if (enabled) {
+        startAutoSync();
+    } else {
+        stopAutoSync();
+    }
+    
+    // Save setting
+    chrome.storage.sync.set({
+        [`${CONFIG.STORAGE_KEYS.SETTINGS}.autoSyncEnabled`]: enabled
+    });
+    
+    logSyncActivity('AUTO_SYNC_TOGGLE', `Auto-sync ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+function setSyncInterval(interval) {
+    backgroundState.currentSyncInterval = interval;
+    
+    // Save setting
+    chrome.storage.sync.set({
+        [`${CONFIG.STORAGE_KEYS.SETTINGS}.syncInterval`]: interval
+    });
+    
+    // Restart auto-sync with new interval
+    if (backgroundState.isAutoSyncEnabled) {
+        startAutoSync();
+    }
+    
+    logSyncActivity('SYNC_INTERVAL_CHANGE', `Sync interval changed to ${interval / 1000 / 60} minutes`);
+}
+
+// Data management
+async function saveExtractedData(data) {
+    try {
+        const timestamp = new Date().toISOString();
+        
+        if (data.books && data.books.length > 0) {
+            // Get existing books data
+            const existingBooks = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.BOOKS_DATA);
+            const booksArray = existingBooks[CONFIG.STORAGE_KEYS.BOOKS_DATA] || [];
+            
+            // Merge with new data
+            const mergedBooks = mergeBookData(booksArray, data.books);
+            
+            await chrome.storage.local.set({
+                [CONFIG.STORAGE_KEYS.BOOKS_DATA]: mergedBooks
+            });
+            
+            console.log(`💾 Saved ${data.books.length} books to storage`);
+        }
+        
+        if (data.ads && data.ads.length > 0) {
+            // Similar process for ads data
+            const existingAds = await chrome.storage.local.get(CONFIG.STORAGE_KEYS.ADS_DATA);
+            const adsArray = existingAds[CONFIG.STORAGE_KEYS.ADS_DATA] || [];
+            
+            const mergedAds = mergeAdsData(adsArray, data.ads);
+            
+            await chrome.storage.local.set({
+                [CONFIG.STORAGE_KEYS.ADS_DATA]: mergedAds
+            });
+            
+            console.log(`💾 Saved ${data.ads.length} ads to storage`);
+        }
+        
+        // Send to dashboard
+        await sendDataToDashboard(data);
+        
+    } catch (error) {
+        console.error('Error saving extracted data:', error);
+        throw error;
+    }
+}
+
+// Merge book data to avoid duplicates
+function mergeBookData(existing, newBooks) {
+    const bookMap = new Map();
+    
+    // Add existing books
+    existing.forEach(book => {
+        const key = book.asin || book.id || book.title?.toLowerCase();
+        if (key) {
+            bookMap.set(key, book);
+        }
+    });
+    
+    // Add/update with new books
+    newBooks.forEach(book => {
+        const key = book.asin || book.id || book.title?.toLowerCase();
+        if (key) {
+            const existing = bookMap.get(key);
+            if (existing) {
+                // Merge data
+                bookMap.set(key, {
+                    ...existing,
+                    ...book,
+                    totalRoyalties: Math.max(existing.totalRoyalties || 0, book.totalRoyalties || 0),
+                    totalSales: Math.max(existing.totalSales || 0, book.totalSales || 0),
+                    kenpReads: Math.max(existing.kenpReads || 0, book.kenpReads || 0),
+                    lastUpdated: new Date().toISOString()
+                });
+            } else {
+                bookMap.set(key, {
+                    ...book,
+                    lastUpdated: new Date().toISOString()
                 });
             }
         }
-        
-    } catch (error) {
-        console.log('Amazon Ads API sync error (normal if not configured):', error);
-    }
+    });
+    
+    return Array.from(bookMap.values());
 }
 
+// Merge ads data
+function mergeAdsData(existing, newAds) {
+    const adsMap = new Map();
+    
+    existing.forEach(ad => {
+        const key = ad.campaignId || ad.id;
+        if (key) {
+            adsMap.set(key, ad);
+        }
+    });
+    
+    newAds.forEach(ad => {
+        const key = ad.campaignId || ad.id;
+        if (key) {
+            adsMap.set(key, {
+                ...adsMap.get(key),
+                ...ad,
+                lastUpdated: new Date().toISOString()
+            });
+        }
+    });
+    
+    return Array.from(adsMap.values());
+}
+
+// Send data to dashboard
 async function sendDataToDashboard(data) {
     try {
-        const settings = await chrome.storage.sync.get(['dashboardUrl', 'dashboardEmail']);
-        
-        const payload = {
-            type: 'background_sync',
-            data: data,
-            email: settings.dashboardEmail,
-            timestamp: new Date().toISOString(),
-            source: 'background_extension'
-        };
-        
-        const response = await fetch(settings.dashboardUrl + '/api/sync', {
+        const response = await fetch(CONFIG.DASHBOARD_URL + '/api/extension/data', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                data: data,
+                userId: backgroundState.userData?.userId,
+                timestamp: new Date().toISOString(),
+                source: 'background_sync'
+            })
         });
         
         if (response.ok) {
-            console.log('Data sent to dashboard successfully');
+            console.log('📤 Data sent to dashboard successfully');
+            logSyncActivity('DASHBOARD_SYNC', 'Data sent to dashboard successfully');
         } else {
-            console.log('Dashboard sync completed (simulated)');
+            throw new Error(`Dashboard sync failed: ${response.status}`);
         }
         
     } catch (error) {
-        console.log('Dashboard sync error (normal in development):', error);
+        console.error('❌ Error sending data to dashboard:', error);
+        logSyncActivity('DASHBOARD_SYNC_ERROR', 'Failed to send data to dashboard', error);
+        // Don't throw - data is still saved locally
     }
 }
 
-// Keep extension alive
+// Logging
+function logSyncActivity(type, message, error = null) {
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        type,
+        message,
+        error: error ? error.message : null
+    };
+    
+    backgroundState.syncLog.unshift(logEntry);
+    
+    // Keep only last 1000 entries
+    if (backgroundState.syncLog.length > 1000) {
+        backgroundState.syncLog = backgroundState.syncLog.slice(0, 1000);
+    }
+    
+    // Save to storage periodically
+    if (backgroundState.syncLog.length % 10 === 0) {
+        chrome.storage.local.set({
+            [CONFIG.STORAGE_KEYS.SYNC_LOG]: backgroundState.syncLog
+        });
+    }
+    
+    console.log(`📝 [${type}] ${message}`);
+}
+
+// Cleanup on suspend
 chrome.runtime.onSuspend.addListener(() => {
-    console.log('Extension suspending - sync will resume on activity');
+    console.log('🔄 Extension suspending - saving state...');
+    
+    // Save current state
+    chrome.storage.local.set({
+        [CONFIG.STORAGE_KEYS.SYNC_LOG]: backgroundState.syncLog,
+        lastSyncTime: backgroundState.lastSyncTime
+    });
+    
+    // Stop intervals
+    stopAutoSync();
+});
+
+// Keep service worker alive
+chrome.runtime.onConnect.addListener((port) => {
+    // Handle long-lived connections to keep service worker active
+    port.onDisconnect.addListener(() => {
+        console.log('Port disconnected');
+    });
 });
 
 // Initialize on script load
-loadSettingsAndStartSync();
+console.log('🎯 KDP Analytics Pro Background Service Ready');
+initializeBackgroundService();
