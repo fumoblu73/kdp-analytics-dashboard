@@ -1,508 +1,494 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KDP Analytics Pro</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            width: 400px;
-            min-height: 500px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-        }
-
-        .container {
-            padding: 0;
-            background: white;
-            min-height: 500px;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 0 0 15px 15px;
-        }
-
-        .header h1 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 20px;
-        }
-
-        .welcome-card, .data-summary-card, .navigation-card, .test-results-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .welcome-card h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-
-        .welcome-card p {
-            font-size: 13px;
-            color: #64748b;
-            margin-bottom: 12px;
-        }
-
-        .quick-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .stat {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #64748b;
-        }
-
-        .stat-value {
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-connected {
-            color: #059669;
-        }
-
-        .status-disconnected {
-            color: #dc2626;
-        }
-
-        .status-warning {
-            color: #d97706;
-        }
-
-        .status-success {
-            color: #059669;
-            font-size: 12px;
-            padding: 8px 12px;
-            background: #ecfdf5;
-            border-radius: 6px;
-            border: 1px solid #a7f3d0;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .summary-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .summary-label {
-            font-size: 11px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .summary-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        .top-books {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 12px;
-        }
-
-        .top-books h5 {
-            font-size: 12px;
-            margin-bottom: 8px;
-            color: #374151;
-        }
-
-        .top-book-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 0;
-            font-size: 11px;
-        }
-
-        .book-rank {
-            background: #3b82f6;
-            color: white;
-            border-radius: 12px;
-            padding: 2px 6px;
-            font-weight: 600;
-            min-width: 24px;
-            text-align: center;
-        }
-
-        .book-title {
-            flex: 1;
-            color: #374151;
-        }
-
-        .book-revenue {
-            font-weight: 600;
-            color: #059669;
-        }
-
-        .buttons-section {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-secondary {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        .btn-secondary:hover {
-            background: #e2e8f0;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-
-        .btn.loading {
-            position: relative;
-        }
-
-        .btn.loading::after {
-            content: '';
-            position: absolute;
-            right: 12px;
-            width: 12px;
-            height: 12px;
-            border: 2px solid transparent;
-            border-top: 2px solid currentColor;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .url-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .url-button {
-            padding: 8px 12px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .url-button:hover {
-            background: #2563eb;
-        }
-
-        .activity-section {
-            margin-top: 20px;
-        }
-
-        .activity-section h4 {
-            font-size: 14px;
-            margin-bottom: 12px;
-            color: #374151;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .activity-log {
-            max-height: 120px;
-            overflow-y: auto;
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .log-entry {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 0;
-            font-size: 11px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        .log-time {
-            color: #64748b;
-            min-width: 60px;
-            font-family: monospace;
-        }
-
-        .log-icon {
-            min-width: 16px;
-        }
-
-        .log-message {
-            flex: 1;
-            color: #374151;
-        }
-
-        .log-success {
-            background: rgba(16, 185, 129, 0.05);
-        }
-
-        .log-error {
-            background: rgba(220, 38, 38, 0.05);
-        }
-
-        .log-warning {
-            background: rgba(217, 119, 6, 0.05);
-        }
-
-        .navigation-card h4 {
-            font-size: 14px;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-
-        .navigation-card p {
-            font-size: 12px;
-            color: #64748b;
-            margin-bottom: 12px;
-        }
-
-        .test-results-card h4 {
-            font-size: 14px;
-            margin-bottom: 12px;
-            color: #1e293b;
-        }
-
-        .found-books {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .found-books h5 {
-            font-size: 12px;
-            margin-bottom: 8px;
-            color: #374151;
-        }
-
-        .found-book {
-            font-size: 11px;
-            color: #64748b;
-            padding: 2px 0;
-        }
-
-        .more-books {
-            font-size: 11px;
-            color: #6b7280;
-            font-style: italic;
-            margin-top: 4px;
-        }
-
-        .no-data {
-            text-align: center;
-            padding: 20px;
-            color: #64748b;
-            font-size: 13px;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 16px;
-            border-top: 1px solid #e2e8f0;
-            background: #f8fafc;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 8px;
-        }
-
-        .footer-link {
-            font-size: 11px;
-            color: #6b7280;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .footer-link:hover {
-            color: #3b82f6;
-        }
-
-        .version {
-            font-size: 10px;
-            color: #9ca3af;
-        }
-
-        /* Scrollbar styling */
-        .activity-log::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .activity-log::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-
-        .activity-log::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 2px;
-        }
-
-        .activity-log::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 KDP Analytics Pro</h1>
-            <p>Real-time Amazon KDP Performance Tracking</p>
-        </div>
-
-        <div class="content">
-            <!-- Welcome Message -->
-            <div id="welcome-message"></div>
-
-            <!-- Sync Status -->
-            <div id="sync-status"></div>
-
-            <!-- Data Summary -->
-            <div id="data-summary">
-                <div class="no-data">
-                    No data available. Sync your KDP account to get started.
+// popup.js - KDP Analytics Extension Popup - Final Complete Version
+// Enhanced Extension Popup for Dashboard Integration
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializePopup();
+    loadSavedSettings();
+    setupEventListeners();
+    updateConnectionStatus();
+});
+
+let lastExtractedData = null;
+let syncInProgress = false;
+
+function initializePopup() {
+    addLog('info', 'Extension popup initialized');
+    showWelcomeMessage();
+    loadLastSyncData();
+}
+
+function showWelcomeMessage() {
+    const welcomeDiv = document.getElementById('welcome-message');
+    if (welcomeDiv) {
+        welcomeDiv.innerHTML = `
+            <div class="welcome-card">
+                <h3>🚀 KDP Analytics Pro</h3>
+                <p>Real-time Amazon KDP performance tracking</p>
+                <div class="quick-stats">
+                    <div class="stat">
+                        <span class="stat-label">Status:</span>
+                        <span id="connection-status" class="stat-value">Checking...</span>
+                    </div>
                 </div>
             </div>
+        `;
+    }
+}
 
-            <!-- Navigation Helper -->
-            <div id="navigation-helper"></div>
+function loadLastSyncData() {
+    chrome.storage.local.get(['kdp_dashboard_data'], (result) => {
+        if (result.kdp_dashboard_data) {
+            lastExtractedData = result.kdp_dashboard_data;
+            updateSyncStatus(lastExtractedData);
+            displayDataSummary(lastExtractedData);
+        } else {
+            updateSyncStatus(null);
+        }
+    });
+}
 
-            <!-- Test Results -->
-            <div id="test-results"></div>
+function updateSyncStatus(data) {
+    const statusElement = document.getElementById('sync-status');
+    const lastSyncElement = document.getElementById('last-sync-time');
+    
+    if (data && data.timestamp) {
+        const lastSync = new Date(data.timestamp);
+        const timeDiff = Date.now() - lastSync.getTime();
+        const minutesAgo = Math.floor(timeDiff / (1000 * 60));
+        
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div class="status-success">
+                    ✅ Last sync: ${minutesAgo < 1 ? 'Just now' : `${minutesAgo} minutes ago`}
+                </div>
+            `;
+        }
+        
+        if (lastSyncElement) {
+            lastSyncElement.textContent = lastSync.toLocaleString();
+        }
+    } else {
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <div class="status-warning">
+                    ⚠️ No data synced yet
+                </div>
+            `;
+        }
+    }
+}
 
-            <!-- Action Buttons -->
-            <div class="buttons-section">
-                <button id="force-sync-btn" class="btn btn-primary">
-                    🚀 Force Sync
-                </button>
-                
-                <button id="open-dashboard-btn" class="btn btn-success">
-                    📊 Open Dashboard
-                </button>
-                
-                <div style="display: flex; gap: 8px;">
-                    <button id="test-extraction-btn" class="btn btn-secondary" style="flex: 1;">
-                        🧪 Test Extraction
+function displayDataSummary(data) {
+    const summaryElement = document.getElementById('data-summary');
+    if (!summaryElement || !data) return;
+    
+    const books = data.books || [];
+    const totalRevenue = data.totalRevenue || 0;
+    const totalBooks = books.length;
+    const totalSales = books.reduce((sum, book) => sum + (book.totalSales || 0), 0);
+    const totalKenpReads = books.reduce((sum, book) => sum + (book.kenpReads || 0), 0);
+    
+    summaryElement.innerHTML = `
+        <div class="data-summary-card">
+            <h4>📊 Current Data Summary</h4>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Books Found:</span>
+                    <span class="summary-value">${totalBooks}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Revenue:</span>
+                    <span class="summary-value">$${totalRevenue.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Sales:</span>
+                    <span class="summary-value">${totalSales.toLocaleString()}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">KENP Reads:</span>
+                    <span class="summary-value">${totalKenpReads.toLocaleString()}</span>
+                </div>
+            </div>
+            ${totalBooks > 0 ? `
+                <div class="top-books">
+                    <h5>🏆 Top Books:</h5>
+                    ${books.slice(0, 3).map((book, index) => `
+                        <div class="top-book-item">
+                            <span class="book-rank">#${index + 1}</span>
+                            <span class="book-title">${book.title.substring(0, 30)}${book.title.length > 30 ? '...' : ''}</span>
+                            <span class="book-revenue">$${(book.totalRoyalties || 0).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function updateConnectionStatus() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+            const currentTab = tabs[0];
+            const url = currentTab.url.toLowerCase();
+            const statusElement = document.getElementById('connection-status');
+            
+            if (url.includes('kdpreports.amazon.com') || url.includes('kdp.amazon.com')) {
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="status-connected">🟢 Connected to KDP</span>';
+                }
+                checkContentScriptStatus(currentTab.id);
+            } else {
+                if (statusElement) {
+                    statusElement.innerHTML = '<span class="status-disconnected">🔴 Not on KDP page</span>';
+                }
+                showNavigationHelper();
+            }
+        }
+    });
+}
+
+function checkContentScriptStatus(tabId) {
+    chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
+        const statusElement = document.getElementById('connection-status');
+        if (chrome.runtime.lastError || !response) {
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-warning">⚠️ Script not loaded</span>';
+            }
+            addLog('warning', 'Content script not responding. Try refreshing the KDP page.');
+        } else {
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-connected">✅ Ready to sync</span>';
+            }
+            addLog('success', 'Content script active and ready');
+        }
+    });
+}
+
+function showNavigationHelper() {
+    const helperElement = document.getElementById('navigation-helper');
+    if (helperElement) {
+        helperElement.innerHTML = `
+            <div class="navigation-card">
+                <h4>📍 Navigate to KDP</h4>
+                <p>To sync your data, please visit:</p>
+                <div class="url-buttons">
+                    <button class="url-button" onclick="openKDPReports()">
+                        📊 KDP Reports
                     </button>
-                    
-                    <button id="clear-data-btn" class="btn btn-secondary" style="flex: 1;">
-                        🗑️ Clear Data
+                    <button class="url-button" onclick="openKDPBookshelf()">
+                        📚 KDP Bookshelf
                     </button>
                 </div>
             </div>
+        `;
+    }
+}
 
-            <!-- Activity Log -->
-            <div class="activity-section">
-                <h4>📝 Activity Log</h4>
-                <div id="activity-log" class="activity-log">
-                    <!-- Log entries will be added here dynamically -->
+function setupEventListeners() {
+    // Force Sync Button
+    const forceSyncBtn = document.getElementById('force-sync-btn');
+    if (forceSyncBtn) {
+        forceSyncBtn.addEventListener('click', performForceSync);
+    }
+    
+    // Open Dashboard Button
+    const openDashboardBtn = document.getElementById('open-dashboard-btn');
+    if (openDashboardBtn) {
+        openDashboardBtn.addEventListener('click', openDashboard);
+    }
+    
+    // Test Extraction Button
+    const testExtractionBtn = document.getElementById('test-extraction-btn');
+    if (testExtractionBtn) {
+        testExtractionBtn.addEventListener('click', performTestExtraction);
+    }
+    
+    // Clear Data Button
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    if (clearDataBtn) {
+        clearDataBtn.addEventListener('click', clearStoredData);
+    }
+    
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        if (!syncInProgress) {
+            loadLastSyncData();
+            updateConnectionStatus();
+        }
+    }, 30000);
+}
+
+async function performForceSync() {
+    if (syncInProgress) {
+        addLog('warning', 'Sync already in progress...');
+        return;
+    }
+    
+    syncInProgress = true;
+    updateSyncButton(true);
+    addLog('info', 'Starting force sync...');
+    
+    try {
+        const tabs = await new Promise(resolve => {
+            chrome.tabs.query({ active: true, currentWindow: true }, resolve);
+        });
+        
+        if (!tabs[0]) {
+            throw new Error('No active tab found');
+        }
+        
+        const currentTab = tabs[0];
+        const url = currentTab.url.toLowerCase();
+        
+        if (!url.includes('kdp')) {
+            throw new Error('Please navigate to a KDP page first');
+        }
+        
+        addLog('info', `Starting extraction on: ${currentTab.url}`);
+        
+        // Send extraction request to content script
+        const response = await new Promise((resolve) => {
+            chrome.tabs.sendMessage(currentTab.id, { action: 'forceSync' }, resolve);
+        });
+        
+        if (chrome.runtime.lastError) {
+            throw new Error('Content script not responding. Try refreshing the page.');
+        }
+        
+        if (response && response.success) {
+            addLog('success', `Sync completed! Found ${response.data?.books?.length || 0} books`);
+            
+            // Save data to storage
+            await saveDataToStorage(response.data);
+            
+            // Update UI
+            lastExtractedData = response.data;
+            updateSyncStatus(response.data);
+            displayDataSummary(response.data);
+            
+            // Auto-open dashboard after successful sync
+            setTimeout(() => {
+                openDashboard();
+            }, 1000);
+            
+        } else {
+            const errorMsg = response?.message || 'Extraction failed';
+            throw new Error(errorMsg);
+        }
+        
+    } catch (error) {
+        addLog('error', `Sync failed: ${error.message}`);
+        console.error('Force sync error:', error);
+    } finally {
+        syncInProgress = false;
+        updateSyncButton(false);
+    }
+}
+
+async function performTestExtraction() {
+    addLog('info', 'Running test extraction...');
+    
+    try {
+        const tabs = await new Promise(resolve => {
+            chrome.tabs.query({ active: true, currentWindow: true }, resolve);
+        });
+        
+        if (!tabs[0]) {
+            throw new Error('No active tab found');
+        }
+        
+        const response = await new Promise((resolve) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'extractData' }, resolve);
+        });
+        
+        if (response && response.success) {
+            addLog('success', `Test completed! Found ${response.data?.books?.length || 0} books`);
+            displayTestResults(response.data);
+        } else {
+            addLog('error', `Test failed: ${response?.message || 'Unknown error'}`);
+        }
+        
+    } catch (error) {
+        addLog('error', `Test failed: ${error.message}`);
+    }
+}
+
+function displayTestResults(data) {
+    const testResultsElement = document.getElementById('test-results');
+    if (!testResultsElement || !data) return;
+    
+    const books = data.books || [];
+    
+    testResultsElement.innerHTML = `
+        <div class="test-results-card">
+            <h4>🧪 Test Results</h4>
+            <p><strong>Books found:</strong> ${books.length}</p>
+            <p><strong>Total revenue:</strong> $${(data.totalRevenue || 0).toFixed(2)}</p>
+            ${books.length > 0 ? `
+                <div class="found-books">
+                    <h5>Found books:</h5>
+                    ${books.slice(0, 5).map(book => `
+                        <div class="found-book">
+                            • ${book.title} - $${(book.totalRoyalties || 0).toFixed(2)}
+                        </div>
+                    `).join('')}
+                    ${books.length > 5 ? `<div class="more-books">...and ${books.length - 5} more</div>` : ''}
                 </div>
-            </div>
+            ` : '<p>No books found in current page.</p>'}
         </div>
+    `;
+}
 
-        <div class="footer">
-            <div class="footer-links">
-                <a href="#" class="footer-link" onclick="openDashboard()">Dashboard</a>
-                <a href="#" class="footer-link" onclick="openKDPReports()">KDP Reports</a>
-                <a href="#" class="footer-link" onclick="openKDPBookshelf()">Bookshelf</a>
-            </div>
-            <div class="version">v2.0.0 - Enhanced Integration</div>
-        </div>
-    </div>
+function updateSyncButton(isLoading) {
+    const syncBtn = document.getElementById('force-sync-btn');
+    if (syncBtn) {
+        if (isLoading) {
+            syncBtn.innerHTML = '🔄 Syncing...';
+            syncBtn.disabled = true;
+            syncBtn.classList.add('loading');
+        } else {
+            syncBtn.innerHTML = '🚀 Force Sync';
+            syncBtn.disabled = false;
+            syncBtn.classList.remove('loading');
+        }
+    }
+}
 
-    <script src="popup.js"></script>
-</body>
-</html>
+function openDashboard() {
+    chrome.tabs.create({
+        url: 'https://kdp-analytics-dashboard.vercel.app',
+        active: true
+    });
+    addLog('info', 'Opening KDP Analytics Dashboard...');
+}
+
+function openKDPReports() {
+    chrome.tabs.create({
+        url: 'https://kdpreports.amazon.com/dashboard',
+        active: true
+    });
+}
+
+function openKDPBookshelf() {
+    chrome.tabs.create({
+        url: 'https://kdp.amazon.com/en_US/bookshelf',
+        active: true
+    });
+}
+
+async function saveDataToStorage(data) {
+    return new Promise((resolve) => {
+        const storageData = {
+            kdp_dashboard_data: {
+                ...data,
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        chrome.storage.local.set(storageData, () => {
+            addLog('success', 'Data saved to extension storage');
+            resolve();
+        });
+    });
+}
+
+function clearStoredData() {
+    chrome.storage.local.remove(['kdp_dashboard_data'], () => {
+        addLog('info', 'Stored data cleared');
+        lastExtractedData = null;
+        updateSyncStatus(null);
+        displayDataSummary(null);
+        
+        const summaryElement = document.getElementById('data-summary');
+        if (summaryElement) {
+            summaryElement.innerHTML = '<div class="no-data">No data available. Sync your KDP account to get started.</div>';
+        }
+    });
+}
+
+function loadSavedSettings() {
+    chrome.storage.sync.get(['autoSync', 'syncInterval'], (result) => {
+        // Load any saved settings
+        console.log('Saved settings:', result);
+    });
+}
+
+function addLog(type, message) {
+    const logContainer = document.getElementById('activity-log');
+    if (!logContainer) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry log-${type}`;
+    
+    const icon = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌'
+    }[type] || 'ℹ️';
+    
+    logEntry.innerHTML = `
+        <span class="log-time">${timestamp}</span>
+        <span class="log-icon">${icon}</span>
+        <span class="log-message">${message}</span>
+    `;
+    
+    logContainer.insertBefore(logEntry, logContainer.firstChild);
+    
+    // Keep only last 10 entries
+    while (logContainer.children.length > 10) {
+        logContainer.removeChild(logContainer.lastChild);
+    }
+}
+
+// Listen for messages from content script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'saveData') {
+        saveDataToStorage(request.data).then(() => {
+            lastExtractedData = request.data;
+            updateSyncStatus(request.data);
+            displayDataSummary(request.data);
+            addLog('success', `Auto-sync completed: ${request.data.books?.length || 0} books`);
+        });
+    }
+    
+    if (request.action === 'getData') {
+        sendResponse({
+            success: true,
+            data: lastExtractedData
+        });
+    }
+    
+    if (request.action === 'ping') {
+        sendResponse({ status: 'popup_active' });
+    }
+});
+
+// Background script communication
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log('Popup received message:', request);
+    
+    switch (request.action) {
+        case 'updateData':
+            if (request.data) {
+                lastExtractedData = request.data;
+                updateSyncStatus(request.data);
+                displayDataSummary(request.data);
+            }
+            break;
+            
+        case 'syncStatus':
+            if (request.status === 'completed') {
+                addLog('success', 'Background sync completed');
+                loadLastSyncData();
+            } else if (request.status === 'failed') {
+                addLog('error', 'Background sync failed');
+            }
+            break;
+    }
+});
+
+// Make functions globally available for onclick handlers
+window.openKDPReports = openKDPReports;
+window.openKDPBookshelf = openKDPBookshelf;
