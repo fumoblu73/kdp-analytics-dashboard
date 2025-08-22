@@ -1,20 +1,62 @@
 {
-  "name": "kdp-analytics-dashboard",
-  "version": "2.0.0",
-  "description": "KDP Analytics Pro - Real-time Amazon KDP Performance Dashboard with Auto-Sync",
+  "name": "kdp-analytics-pro-rainbook",
+  "version": "2.1.0",
+  "description": "KDP Analytics Pro - Advanced Amazon KDP Performance Dashboard with Auto-Sync for Rainbook Editions",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
-    "build": "echo 'No build step needed for static site'"
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step needed for static site'",
+    "test": "jest",
+    "deploy": "vercel",
+    "data:backup": "node scripts/backup.js",
+    "data:restore": "node scripts/restore.js",
+    "setup:env": "node scripts/setup-env.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "axios": "^1.6.0",
-    "node-cron": "^3.0.3"
+    "axios": "^1.6.7",
+    "node-cron": "^3.0.3",
+    "crypto": "^1.0.1",
+    "fs-extra": "^11.2.0",
+    "moment": "^2.30.1",
+    "lodash": "^4.17.21",
+    "csv-parser": "^3.0.0",
+    "json2csv": "^6.1.0",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "compression": "^1.7.4",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "@types/node": "^20.10.7"
   },
   "engines": {
     "node": "18.x"
+  },
+  "keywords": [
+    "kdp",
+    "amazon",
+    "publishing",
+    "analytics",
+    "dashboard",
+    "rainbook",
+    "royalties",
+    "books",
+    "kindle"
+  ],
+  "author": "Rainbook Editions",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rainbook-editions/kdp-analytics-dashboard.git"
+  },
+  "homepage": "https://kdp-analytics-dashboard.vercel.app",
+  "bugs": {
+    "url": "https://github.com/rainbook-editions/kdp-analytics-dashboard/issues"
   }
 }
